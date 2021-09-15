@@ -37,6 +37,7 @@ generate_group_scores <- function(num_measurements, param_table, measurement_day
   
   return(empty_data)
 }
+
 generate_ind_scores <- function(param_table, num_measurements, measurement_days, person_ID) {
   
   #extract error values for a person
@@ -53,6 +54,7 @@ generate_ind_scores <- function(param_table, num_measurements, measurement_days,
   
   return(ind_scores)
 }
+
 extract_ind_error_values <- function(param_table, num_measurements){
   
   #extract name of error columns and use them to return vector of error values
@@ -61,6 +63,7 @@ extract_ind_error_values <- function(param_table, num_measurements){
   
   return(ind_error_values)
 }
+
 generate_pop_scores <- function(param_table, num_measurements, measurement_days) {
   
   #extract parameter values for a person

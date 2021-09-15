@@ -1,0 +1,284 @@
+---
+title: "Using nonlinSims"
+author: "Sebastian Sciarra"
+date: "September 15, 2021"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Using nonlinSims}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(easypackages)
+packages <- c('nonlinLong', 'tidyverse', 'data.table')
+libraries(packages)
+
+#packages to load: tidyverse, data.table, 
+```
+
+
+# Experiment 1 (Does equal spacing perform best across all patterns of s-shaped change?)
+
+To test whether equal spacing should be used when one does not know the pattern of s-shape change, Experiment 1 will manipulate the 
+pattern of change, measurement spacing, and the number of measurements. Measurement spacing will be manipulated such that measurements
+are either separated by equal-length intervals, intervals that increase in length over time (*time-increasing spacing*), intervals that
+decrease in length over time (*time-decreasing spacing*), or intervals that separate measurements at the beginning, middle, and end of
+the measurement window (*middle-and-extreme spacing*). Number of measurements will be manipulated to either be 5, 7, 9, or 11 
+measurements. The patterns of s-shape change will be manipulated by modulating the midpoint parameters, thus shifting the inflection 
+point. Change will be assumed to occur over a 360-day period. 
+
+```{r logistic-change-patterns, echo=F}
+
+theta <- 3.5
+alpha <- 3.98
+diff <- alpha - theta
+beta <- 60
+gamma <- 30
+
+days <- seq(from = 0, to = 364, length.out = 365)
+midway_point <- beta-1
+satiation_point <- beta+gamma-1 
+
+s_shape_nonlin <- data.frame('curve_score' = theta + ((alpha - theta)/(1 + exp((beta - days)/gamma))), 
+                      'day' = days)
+
+s_shape_nonlin_3 <- data.frame('curve_score' = diff/(1 + exp((beta - days)/gamma)) + theta, 
+                      'day' = days)
+
+midway_value <- s_shape_nonlin$curve_score[which(s_shape_nonlin$day == midway_point)]
+satiation_value <- s_shape_nonlin$curve_score[which(s_shape_nonlin$day == satiation_point)]
+starting_value <- s_shape_nonlin$curve_score[s_shape_nonlin$day == 0]
+end_value <- s_shape_nonlin$curve_score[s_shape_nonlin$day == nrow(s_shape_nonlin)-1]
+
+base_nonlin_plot <- ggplot(s_shape_nonlin_3, aes(x = day, y = curve_score)) + 
+  geom_line(size = 1) + 
+  theme_classic(base_family = 'Helvetica') +
+  scale_y_continuous(limits = c(3.5, 4.0), breaks = seq(from = 3.5, to = 4.0, by = 0.1)) +
+  scale_x_continuous(breaks = seq(0, 365, by = 45), limits = c(0, 365), minor_breaks = seq(0, 365, by = 45))+
+  labs(x = 'Day', y = 'Population value', size = 16) +
+  annotate(geom = 'text', x = 54, y = 3.9, label = 'y == theta + frac(alpha - theta, 1 + e^(frac(beta-time, gamma)))', parse = T, size = 5) + 
+  theme(axis.text = element_text(size = 11)) 
+
+base_nonlin_plot
+```
+
+```{r generate-thee-param-data, echo=F}
+#fixed effects
+sd_scale <- 1.5
+common_effect_size <- 0.32
+diff_fixed <- sd_scale * common_effect_size
+
+beta_fixed <- seq(from = 60, to = 300, by = 60)
+gamma_fixed <- 20
+
+#random effects 
+sd_diff <- 0.30
+sd_beta <- 10
+sd_gamma <- 5
+sd_error <- 0.10
+
+#correlations
+cor_diff_beta <- -0.20
+cor_diff_gamma <- -0.10
+cor_beta_gamma <- 0.50
+
+scaling_constant <- 3.5
+
+pop_params <- generate_three_param_pop_curve(diff_fixed = diff_fixed, beta_fixed = beta_fixed[1], gamma_fixed = gamma_fixed, 
+                               sd_diff = sd_diff, sd_beta = sd_beta, sd_gamma = sd_gamma, sd_error = sd_error, 
+                               cor_diff_beta = cor_diff_beta, cor_diff_gamma = cor_diff_gamma, cor_beta_gamma = cor_beta_gamma,
+                               scaling_constant = scaling_constant)
+
+
+cov_matrix <- generate_three_param_cov_matrix(num_time_points = 5, pop_param_list = pop_params)
+
+param_table <- generate_ind_param_values(pop_param_list = pop_params, response_group_size = 100, num_time_points = 5, cov_matrix = cov_matrix)
+
+schedule <- compute_measurement_schedule(time_period = 360, num_measurements = 5,base_time_length = 30, measurement_spacing = 'mid_ext')
+
+data <- generate_group_scores(num_measurements = 5, param_table = param_table,measurement_days = schedule$measurement_days, time_period = 360)
+
+```
+
+
+# Determining random-effect values for SD_{diff} and SD_{error}
+
+# Code tests 
+
+
+```{r echo=F}
+num_flips <- 10
+prob_success <- 0.2
+num_successes <- 2
+
+(factorial(num_flips)/(factorial(num_successes)*factorial(num_flips-num_successes)))*prob_success^num_successes*(1-prob_success)^(num_flips-num_successes)
+
+
+factorial(num_flips)/(factorial(num_successes)*factorial(num_flips-num_successes)) #represents total number of ways two sucesses can be obtained 
+prob_success^num_successes #represents probability of having given probability of success on all successful trials 
+prob_success^num_successes*(1-prob_success) #represents probability of having given probability of failure on all failed trials 
+
+#solving for the probability of success
+num_flips <- 10
+num_successes <- 7
+prob_success <- 0.9
+
+(factorial(num_flips)/(factorial(num_successes)*factorial(num_flips-num_successes)))*prob_success^num_successes*(1-prob_success)^(num_flips-num_successes)
+
+
+```
+
+
+# Appendix 
+## Apppendix A: Computation of spacing for time-increasing and time-decreasing conditions 
+
+Several attempts were made to compute interval lengths such that they were of integer lengths. Unfortunately, it was not possible to find a set of intervals that followed the equation
+$i_{length} = kc + b$ (where $c$ represents the constant length and $b$ represents the base length) such that all interval lengths were of integer values. The code below shows that, 
+for all base lengths of 1--30 days (assuming a time period of 360 days), no set of intervals is only integes. 
+
+```{r time_inc-interval-calculations, echo=T}
+
+compute_time_increasing_intervals <- function(time_period, num_measurements, base_time_length) {
+
+  #compute length of constant by first calculating how many days remain after subtracting base_time_length for each interval.
+  ##num_measurements-1 = number of intervals
+  remaining_num_days <- time_period - (num_measurements-1)*base_time_length
+  ##The number of constants = num_measurements - 1
+  constant_length <- remaining_num_days/sum(seq(0,(num_measurements-2)))
+
+  interval_lengths <- seq(0,(num_measurements-2))*constant_length + base_time_length
+  return(interval_lengths)
+}
+
+testx <- function() {
+  for (base_time_length in seq(1:30)) {
+    print(base_time_length)
+    print("=================")
+    for (num_measurements in c(5, 7, 9, 11)) {
+      xo <- get_stuff(n = n, x = x)
+      xo <- c(n, xo, sum(xo))
+      print(sprintf("%1.3f",xo))
+    }
+    print("=================")
+  }
+}
+
+
+
+
+```
+
+## Appendix B: Other functions
+
+```{r other-functions, echo=F}
+
+compute_time_inc_spacing <- function(time_period, num_time_points, min_interval_length) {
+
+
+  measurement_design_list <- determine_number_unfixed_measurements(time_period=180, num_time_points=8, min_interval_length=10)
+
+  avg_interval_length <- measurement_design_list$num_spacing_days/measurement_design_list$sum_interval_lengths
+
+  num_rounded_up_values <- ifelse(avg_interval_length%%1 > .50,
+                                  round((avg_interval_length%%1)*measurement_design_list$num_intervals, digits = 0),
+                                  round(measurement_design_list$num_intervals -(avg_interval_length%%1)*measurement_design_list$num_intervals,
+                                        digits = 0))
+
+  num_rounded_down_values <- measurement_design_list$sum_interval_lengths - num_rounded_up_values
+
+  #divide the number of rounded-down and rounded-up values across five intervals of increasing lengths
+  interval_unit_lengths <- 1:measurement_design_list$num_intervals
+  interval_day_lengths <- numeric(length = measurement_design_list$num_intervals)
+
+  for (interval in 1:measurement_design_list$num_intervals){
+    while (num_rounded_up_values > 0) {
+
+        interval_day_lengths[interval] <- rep(ceiling(avg_interval_length), times = interval_unit_lengths[interval])
+        num_rounded_up_values <- num_rounded_up_values - interval_unit_lengths[interval]
+        remaining_lengths <-
+    }
+
+    #if the interval length is less than the unit_length * ceiling(avg_interval_length)
+    if (interval_day_lengths[interval] < interval_unit_lengths[interval] * ceiling(avg_interval_length)){
+      while (num_rounded_down_values > 0) {
+        interval_day_lengths[interval] <- rep(floor(avg_interval_length), times = interval_unit_lengths[interval])
+        num_rounded_down_values <- num_rounded_down_values - interval_unit_lengths[interval]
+      }
+
+  }
+
+
+  measurement_intervals <- c(rep(ceiling(avg_interval_length), times = num_rounded_up_values),
+                             rep(floor(avg_interval_length), times = num_rounded_down_values))
+
+  measurement_days <- c(0, cumsum(c(measurement_intervals) + 1))
+
+  return(measurement_days)
+  }
+}
+
+compute_unequal_early_spacing_days(time_period = 180, num_time_points = 8, min_interval_length = 10)
+
+
+
+determine_number_unfixed_measurements <- function(time_period, num_time_points, min_interval_length){
+
+  num_intervals <- num_time_points - 1
+  sum_interval_lengths <- sum(1:num_intervals)
+  min_interval_length <- min_interval_length - 1
+  num_spacing_days <- time_period - num_time_points
+
+  num_fixed_measurements <- 0
+
+  #if the avg_interval_length is smaller than the min_interval length, decrease the number of free_time_points by 1,
+  #recalculate sum_interval_lengths and the num_spacing days and repeat
+  while(num_spacing_days/sum_interval_lengths < min_interval_length) {
+    num_intervals <- num_intervals - 1
+    sum_interval_lengths <- sum(1:num_intervals)
+    num_measurements <- num_intervals + 1
+
+    #note that each time a measure is fixed, a total interval of min_interval_length + 1 is subtracted because the measurement
+    #period takes a period of 1 day
+    num_fixed_measurements <- num_fixed_measurements + 1
+    num_spacing_days <- time_period - num_fixed_measurements*(min_interval_length + 1) - num_measurements
+}
+
+  #returns number unfixed measurement days, num_intervals, & sum_interval_lengths,
+  return(list(num_unfixed_measurements = num_intervals + 1,
+              num_intervals = num_intervals,
+              sum_interval_lengths = sum_interval_lengths,
+              num_spacing_days = num_spacing_days))
+}
+
+
+
+compute_rounded_up_down_values <- function(avg_interval_length, num_intervals){
+
+  #if decimal value greater than .50, then (avg_interval_length*%%1)*NI is the number of rounded-up values
+
+  #if decimal value less than .50, then (avg_interval_length*%%1)*NI is the number of rounded-down values
+
+  dt$x <- round((avg_interval_length%%1)*num_intervals, digits = 0)
+
+  num_rounded_up_values <- ifelse(avg_interval_length%%1 > .50,
+                                 x, 0)
+
+  num_rounded_down_values <- num_intervals - num_rounded_up_values
+
+
+  measurement_intervals <- c(rep(ceiling(avg_interval_length), times = num_rounded_up_values),
+                             rep(floor(avg_interval_length), times = num_rounded_down_values))
+
+}
+
+```
+
+## Appendix C: 
