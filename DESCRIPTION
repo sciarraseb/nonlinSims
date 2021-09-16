@@ -16,6 +16,7 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
 Suggests: 
     knitr,
-    rmarkdown, 
+    rmarkdown
+Imports: 
     data.table
 VignetteBuilder: knitr

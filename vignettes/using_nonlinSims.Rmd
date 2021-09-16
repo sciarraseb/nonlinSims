@@ -106,6 +106,7 @@ schedule <- compute_measurement_schedule(time_period = 360, num_measurements = 5
 
 data <- generate_group_scores(num_measurements = 5, param_table = param_table,measurement_days = schedule$measurement_days, time_period = 360)
 
+
 ```
 
 
