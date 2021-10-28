@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(easypackages)
-packages <- c('nonlinLong', 'tidyverse', 'data.table')
+packages <- c('tidyverse', 'data.table', 'nonlinSims', 'nlraa', "OpenMx", 'devtools')
 libraries(packages)
 
 #packages to load: tidyverse, data.table, 
@@ -76,41 +76,135 @@ sd_scale <- 1.5
 common_effect_size <- 0.32
 diff_fixed <- sd_scale * common_effect_size
 
-beta_fixed <- seq(from = 60, to = 300, by = 60)
+num_measurements <- 7
+time_period <- 360
+scaling_factor <- time_period/num_measurements
+
+beta_fixed <- (seq(from = 60, to = 300, by = 60))[4]
 gamma_fixed <- 20
 
 #random effects 
-sd_diff <- 0.30
+sd_diff <- 0.15
 sd_beta <- 10
 sd_gamma <- 5
-sd_error <- 0.10
+sd_error <- 0.05
 
 #correlations
-cor_diff_beta <- -0.20
-cor_diff_gamma <- -0.10
-cor_beta_gamma <- 0.50
+cor_diff_beta <- 0
+cor_diff_gamma <- 0
+cor_beta_gamma <- 0
+scaling_constant <- 3
 
-scaling_constant <- 3.5
-
-pop_params <- generate_three_param_pop_curve(diff_fixed = diff_fixed, beta_fixed = beta_fixed[1], gamma_fixed = gamma_fixed, 
+pop_params <- generate_three_param_pop_curve(diff_fixed = diff_fixed, beta_fixed = beta_fixed, gamma_fixed = gamma_fixed, 
                                sd_diff = sd_diff, sd_beta = sd_beta, sd_gamma = sd_gamma, sd_error = sd_error, 
                                cor_diff_beta = cor_diff_beta, cor_diff_gamma = cor_diff_gamma, cor_beta_gamma = cor_beta_gamma,
                                scaling_constant = scaling_constant)
+                              
+                        
+
+#generate starting values 
+#starting_values <- generate_multiple_starting_value_sets(num_sets = 300, time_fixed_effects = c('beta_fixed', 'gamma_fixed'),
+#                                            time_rand_effects = c('beta_rand', 'gamma_rand'), 
+#                                            diff_effects = c('diff_fixed', 'diff_rand'), 
+#                                            error = c('epsilon'))
+#
+#starting_values_184 <- starting_values[184, ]
+#starting_values_184$beta_fixed <- 40.97266
+#starting_values_184$gamma_fixed <- 44.43965
+#starting_values_184$beta_rand <- 7.429643
+#starting_values_184$gamma_rand <- 10.65619
+#starting_values_184$diff_fixed <- 0.1386197
+#starting_values_184$diff_rand <- 0.2855563
+#starting_values_184$epsilon <- 0.8362621
 
 
-cov_matrix <- generate_three_param_cov_matrix(num_time_points = 5, pop_param_list = pop_params)
+schedule <- compute_measurement_schedule(time_period = 360, num_measurements = num_measurements, base_time_length = 30, measurement_spacing = 'time_inc')
 
-param_table <- generate_ind_param_values(pop_param_list = pop_params, response_group_size = 100, num_time_points = 5, cov_matrix = cov_matrix)
+cov_matrix <- generate_three_param_cov_matrix(num_time_points = num_measurements, pop_param_list = pop_params)
 
-schedule <- compute_measurement_schedule(time_period = 360, num_measurements = 5,base_time_length = 30, measurement_spacing = 'mid_ext')
+param_table <- generate_ind_param_values(pop_param_list = pop_params, response_group_size = 30, num_time_points = num_measurements, cov_matrix = cov_matrix)
 
-data <- generate_group_scores(num_measurements = 5, param_table = param_table,measurement_days = schedule$measurement_days, time_period = 360)
+data <- generate_group_scores(num_measurements = num_measurements, param_table = param_table,measurement_days = schedule$measurement_days, time_period = 360, scaling_constant = 3)
+
+data_wide <- pivot_wider(data = data[ ,1:3], names_from = 'measurement_day', values_from = 'obs_score', 
+                         names_prefix = sprintf('t%d_', 1:uniqueN(data$measurement_day)))
+
+starting_values <- generate_multiple_starting_value_sets(num_sets = 100, data = data, data_wide = data_wide)
+starting_values$beta_rand <- starting_values$beta_fixed/2 + 5*runif(n = 100, min = -0.5, max = 0.5)
+starting_values$gamma_rand <- starting_values$gamma_fixed/2 + 5*runif(n = 100, min = -0.5, max = 0.5)
+
+#placeholder model
+latent_growth_model <- create_logistic_growth_model(data_wide = data_wide, 
+                                                    model_name = 'lg_nonlinear', starting_values = starting_values[1, ])
+
+fit_results <- evaluate_models(initial_model =  latent_growth_model, starting_values = starting_values)
+fit_results
+
+best_fitting_output <- extract_best_estimates(fit_results = fit_results, starting_values = starting_values)
+best_fitting_output
+
+
+mclapply(X = 10, FUN = compute_mult_simulations, pop_params = pop_params, cov_matrix = cov_matrix, schedule = schedule, response_group_size = 30, mc.cores = 3)
+
+compute_mult_simulations(num_sims = 50, pop_params = pop_params, cov_matrix = cov_matrix, schedule = schedule, response_group_size = 30)
+```
+
+```{r echo=F}
+tic()
+mclapply(X = 1:10, FUN = compute_mult_simulations, pop_params = pop_params, cov_matrix = cov_matrix, schedule = schedule, response_group_size = 30, mc.cores = detectCores() -1)
+toc()
+```
+
+```{r starting-value-procedure, echo=F}
+#Fixed_effect starting values  
+#In MPlus framework, w represents starting values (pg. 520 of manual; defaults for growth models)
+##fixed-effect values for  are obtained using self-starting function and not fitting any nonlinear regression model to the data (fitting a 
+#model at this stage can yield impossible values). Also note that starting value for diff_fixed is calculated by subtracting mean ending value from mean
+#beginning value
+##In Mplus, automatic starting values for the growth factor means and variances are generated based on individual regressions of the outcome variable on time. 
+##Unfortunately, following this approach in this specific situation with nonlinear models can hijacks the starting value procedure (see above comment). 
+fixed_effect_starts <- logistic_self_start(data = data)
+
+#Random-effect starting values 
+##diff_rand is obtained by obtaining variance of change scores from each person (i.e., var((score_final_time_point - score_final_time_point))
+diff_rand_start <- compute_diff_rand_start(data)
+
+rand_starts <- compute_rand_effect_starts(data = data,time_rand_effects = c('beta_rand', 'gamma_rand'))
+fixed_starts <- compute_fixed_effect_starts(data = data, rand_effect_starts = rand_starts)
+
+
+#w  + srb
+##r = unif(-0,5, 0.5) 
+##s = 5 (determines strength of random perturbation)
+##b = base scale variable = 2max{sqrt(var), 1}, where var = starting value for variance of parameter
+###b for diff_fixed = 2 (almost all of the time)
+###b for beta_fixed = sqrt(var) almost all of the time 
+###b for gamma_fixed = sqrt(var) almost all of the time
+###b for random effects and residual variance = 0 (i.e., no perturbation in generation process of random variables or residual variance)
+
+#Residual variance starting value (Hipp & Bauer, 2006)
+##20-80% of observed variance (averaged across each time point)
+res_var <- compute_residual_start_value(data_wide = data_wide)
+
+```
+
+```{r testing-starting-value procedure, echo=F}
+#failsafe guard on starting value procedure 
+##generate another set of starting values if if no set of starting value
+#with cell size n = 100, test convergence rate for all three conditions of experiment 1 (spacing, shape, number of measurements)
+##sample size is kept constant at 200?
+
 
 
 ```
 
 
-# Determining random-effect values for SD_{diff} and SD_{error}
+```{r errors-to-fix}
+#1. Even number of measurements for compute measurement schedule. 
+#2. 
+
+```
+
 
 # Code tests 
 
@@ -180,105 +274,6 @@ testx <- function() {
 ## Appendix B: Other functions
 
 ```{r other-functions, echo=F}
-
-compute_time_inc_spacing <- function(time_period, num_time_points, min_interval_length) {
-
-
-  measurement_design_list <- determine_number_unfixed_measurements(time_period=180, num_time_points=8, min_interval_length=10)
-
-  avg_interval_length <- measurement_design_list$num_spacing_days/measurement_design_list$sum_interval_lengths
-
-  num_rounded_up_values <- ifelse(avg_interval_length%%1 > .50,
-                                  round((avg_interval_length%%1)*measurement_design_list$num_intervals, digits = 0),
-                                  round(measurement_design_list$num_intervals -(avg_interval_length%%1)*measurement_design_list$num_intervals,
-                                        digits = 0))
-
-  num_rounded_down_values <- measurement_design_list$sum_interval_lengths - num_rounded_up_values
-
-  #divide the number of rounded-down and rounded-up values across five intervals of increasing lengths
-  interval_unit_lengths <- 1:measurement_design_list$num_intervals
-  interval_day_lengths <- numeric(length = measurement_design_list$num_intervals)
-
-  for (interval in 1:measurement_design_list$num_intervals){
-    while (num_rounded_up_values > 0) {
-
-        interval_day_lengths[interval] <- rep(ceiling(avg_interval_length), times = interval_unit_lengths[interval])
-        num_rounded_up_values <- num_rounded_up_values - interval_unit_lengths[interval]
-        remaining_lengths <-
-    }
-
-    #if the interval length is less than the unit_length * ceiling(avg_interval_length)
-    if (interval_day_lengths[interval] < interval_unit_lengths[interval] * ceiling(avg_interval_length)){
-      while (num_rounded_down_values > 0) {
-        interval_day_lengths[interval] <- rep(floor(avg_interval_length), times = interval_unit_lengths[interval])
-        num_rounded_down_values <- num_rounded_down_values - interval_unit_lengths[interval]
-      }
-
-  }
-
-
-  measurement_intervals <- c(rep(ceiling(avg_interval_length), times = num_rounded_up_values),
-                             rep(floor(avg_interval_length), times = num_rounded_down_values))
-
-  measurement_days <- c(0, cumsum(c(measurement_intervals) + 1))
-
-  return(measurement_days)
-  }
-}
-
-compute_unequal_early_spacing_days(time_period = 180, num_time_points = 8, min_interval_length = 10)
-
-
-
-determine_number_unfixed_measurements <- function(time_period, num_time_points, min_interval_length){
-
-  num_intervals <- num_time_points - 1
-  sum_interval_lengths <- sum(1:num_intervals)
-  min_interval_length <- min_interval_length - 1
-  num_spacing_days <- time_period - num_time_points
-
-  num_fixed_measurements <- 0
-
-  #if the avg_interval_length is smaller than the min_interval length, decrease the number of free_time_points by 1,
-  #recalculate sum_interval_lengths and the num_spacing days and repeat
-  while(num_spacing_days/sum_interval_lengths < min_interval_length) {
-    num_intervals <- num_intervals - 1
-    sum_interval_lengths <- sum(1:num_intervals)
-    num_measurements <- num_intervals + 1
-
-    #note that each time a measure is fixed, a total interval of min_interval_length + 1 is subtracted because the measurement
-    #period takes a period of 1 day
-    num_fixed_measurements <- num_fixed_measurements + 1
-    num_spacing_days <- time_period - num_fixed_measurements*(min_interval_length + 1) - num_measurements
-}
-
-  #returns number unfixed measurement days, num_intervals, & sum_interval_lengths,
-  return(list(num_unfixed_measurements = num_intervals + 1,
-              num_intervals = num_intervals,
-              sum_interval_lengths = sum_interval_lengths,
-              num_spacing_days = num_spacing_days))
-}
-
-
-
-compute_rounded_up_down_values <- function(avg_interval_length, num_intervals){
-
-  #if decimal value greater than .50, then (avg_interval_length*%%1)*NI is the number of rounded-up values
-
-  #if decimal value less than .50, then (avg_interval_length*%%1)*NI is the number of rounded-down values
-
-  dt$x <- round((avg_interval_length%%1)*num_intervals, digits = 0)
-
-  num_rounded_up_values <- ifelse(avg_interval_length%%1 > .50,
-                                 x, 0)
-
-  num_rounded_down_values <- num_intervals - num_rounded_up_values
-
-
-  measurement_intervals <- c(rep(ceiling(avg_interval_length), times = num_rounded_up_values),
-                             rep(floor(avg_interval_length), times = num_rounded_down_values))
-
-}
 
 ```
 

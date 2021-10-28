@@ -8,7 +8,8 @@ generate_group_scores(
   num_measurements,
   param_table,
   measurement_days,
-  time_period
+  time_period,
+  scaling_constant
 )
 }
 \arguments{

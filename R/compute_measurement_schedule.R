@@ -61,7 +61,7 @@ compute_time_decreasing_schedule<- function(time_period, num_measurements, base_
   interval_length_list <- compute_time_increasing_schedule(time_period, num_measurements, base_time_length)
   
   return(list('interval_length' = rev(interval_length_list$interval_length),
-              'measurement_days' = time_period - rev(interval_length_list$measurement_days)))
+              'measurement_days' = (time_period + 1) - rev(interval_length_list$measurement_days)))
 }
 
 compute_middle_extreme_schedule <- function(time_period, num_measurements, base_time_length){
@@ -83,7 +83,7 @@ compute_middle_extreme_schedule <- function(time_period, num_measurements, base_
 }
 
 compute_num_middle_extreme_measurements <- function(num_measurements) {
-  #remaining measurements is a temporary variable used to determine if an even number of measurements are left for the beginning and end
+  #remaining measurements is a temporary variable used to determine if an even number of measurements are left for the extremities (i.e., beginining and end)
   remaining_measurements <- num_measurements - ceiling(num_measurements/2)
   
   num_middle_measurements <- ifelse(remaining_measurements%%2 == 0, ceiling(num_measurements/2), floor(num_measurements/2))
