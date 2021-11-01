@@ -36,7 +36,6 @@ compute_ind_simulation <- function(pop_params, cov_matrix, schedule, response_gr
                                            num_time_points = num_measurements, 
                                            cov_matrix = cov_matrix)
   
-  
   data <- generate_group_scores(num_measurements = num_measurements, 
                                 param_table = param_table,measurement_days = schedule$measurement_days, 
                                 time_period = 360, scaling_constant = 3)
@@ -45,23 +44,20 @@ compute_ind_simulation <- function(pop_params, cov_matrix, schedule, response_gr
                            names_prefix = sprintf('t%d_', 1:uniqueN(data$measurement_day)))
   
   
-  #generate starting values 
-  starting_values <- generate_multiple_starting_value_sets(num_sets = 1, data = data, data_wide = data_wide)
-  
   #create placeholder model  
-  latent_growth_model <- create_logistic_growth_model(data_wide = data_wide, 
-                                                      model_name = 'lg_nonlinear', starting_values = starting_values[1, ])
+  latent_growth_model <- create_logistic_growth_model(data_wide = data_wide, model_name = 'lg_nonlinear')
   
   #find good starting values 
   latent_growth_model <- mxAutoStart(model = latent_growth_model)
   
+  #run model with 10 different sets of starting values 
   model_results <- mxTryHard(latent_growth_model)
   
+  #indicate model status 
   analysis_output <- list('status' = model_results$output$status$code, 
                               'code' = model_results$output$status$status, 
                               'minus_2_likelihood' = model_results$output$Minus2LogLikelihood)
                               
-
 
   return(analysis_output)
 }

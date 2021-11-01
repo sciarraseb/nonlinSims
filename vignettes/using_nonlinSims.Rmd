@@ -80,7 +80,6 @@ num_measurements <- 7
 time_period <- 360
 scaling_factor <- time_period/num_measurements
 
-beta_fixed <- (seq(from = 60, to = 300, by = 60))[4]
 gamma_fixed <- 20
 
 #random effects 
@@ -95,10 +94,6 @@ cor_diff_gamma <- 0
 cor_beta_gamma <- 0
 scaling_constant <- 3
 
-pop_params <- generate_three_param_pop_curve(diff_fixed = diff_fixed, beta_fixed = beta_fixed, gamma_fixed = gamma_fixed, 
-                               sd_diff = sd_diff, sd_beta = sd_beta, sd_gamma = sd_gamma, sd_error = sd_error, 
-                               cor_diff_beta = cor_diff_beta, cor_diff_gamma = cor_diff_gamma, cor_beta_gamma = cor_beta_gamma,
-                               scaling_constant = scaling_constant)
                               
                         
 
@@ -118,8 +113,16 @@ pop_params <- generate_three_param_pop_curve(diff_fixed = diff_fixed, beta_fixed
 #starting_values_184$epsilon <- 0.8362621
 
 
+#Set IVs
+beta_fixed <- (seq(from = 80, to = 280, by = 100))[1]
+pop_params <- generate_three_param_pop_curve(diff_fixed = diff_fixed, beta_fixed = beta_fixed, gamma_fixed = gamma_fixed, 
+                               sd_diff = sd_diff, sd_beta = sd_beta, sd_gamma = sd_gamma, sd_error = sd_error, 
+                               cor_diff_beta = cor_diff_beta, cor_diff_gamma = cor_diff_gamma, cor_beta_gamma = cor_beta_gamma,
+                               scaling_constant = scaling_constant)
+
 schedule <- compute_measurement_schedule(time_period = 360, num_measurements = num_measurements, base_time_length = 30, measurement_spacing = 'time_inc')
 
+#run individual iterations
 cov_matrix <- generate_three_param_cov_matrix(num_time_points = num_measurements, pop_param_list = pop_params)
 
 param_table <- generate_ind_param_values(pop_param_list = pop_params, response_group_size = 30, num_time_points = num_measurements, cov_matrix = cov_matrix)
@@ -130,18 +133,11 @@ data_wide <- pivot_wider(data = data[ ,1:3], names_from = 'measurement_day', val
                          names_prefix = sprintf('t%d_', 1:uniqueN(data$measurement_day)))
 
 starting_values <- generate_multiple_starting_value_sets(num_sets = 100, data = data, data_wide = data_wide)
-starting_values$beta_rand <- starting_values$beta_fixed/2 + 5*runif(n = 100, min = -0.5, max = 0.5)
-starting_values$gamma_rand <- starting_values$gamma_fixed/2 + 5*runif(n = 100, min = -0.5, max = 0.5)
-
 #placeholder model
 latent_growth_model <- create_logistic_growth_model(data_wide = data_wide, 
                                                     model_name = 'lg_nonlinear', starting_values = starting_values[1, ])
 
-fit_results <- evaluate_models(initial_model =  latent_growth_model, starting_values = starting_values)
-fit_results
-
-best_fitting_output <- extract_best_estimates(fit_results = fit_results, starting_values = starting_values)
-best_fitting_output
+latent_growth_model <- create_logistic_growth_model2(data_wide = data_wide, model_name ='lg_nonlinear')
 
 
 mclapply(X = 10, FUN = compute_mult_simulations, pop_params = pop_params, cov_matrix = cov_matrix, schedule = schedule, response_group_size = 30, mc.cores = 3)
@@ -150,9 +146,19 @@ compute_mult_simulations(num_sims = 50, pop_params = pop_params, cov_matrix = co
 ```
 
 ```{r echo=F}
-tic()
-mclapply(X = 1:10, FUN = compute_mult_simulations, pop_params = pop_params, cov_matrix = cov_matrix, schedule = schedule, response_group_size = 30, mc.cores = detectCores() -1)
-toc()
+# Creating mean and covariance matrix
+
+N <- 10000
+d <- 20
+
+mu <- 1:d
+tmp <- matrix(rnorm(d^2), d, d)
+mcov <- tcrossprod(tmp, tmp)
+
+x <- rmvn(N, mu, mcov, ncores = 2)
+
+var(x[,1 ])
+
 ```
 
 ```{r starting-value-procedure, echo=F}
