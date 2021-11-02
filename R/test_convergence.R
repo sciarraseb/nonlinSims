@@ -15,6 +15,7 @@ test_convergence <- function(factor_list, num_iterations, pop_params, response_g
     #setup variable
     num_measurements <- exp_conditions$num_measurements[condition]
     
+    
     #setup of population parameters
     pop_params$beta_fixed <- exp_conditions$midpoint[condition]
     
