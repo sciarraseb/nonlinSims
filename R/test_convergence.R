@@ -1,4 +1,4 @@
-#' vTests effectiveness of starting value procedure. 
+#' Tests effectiveness of starting value procedure. 
 #'
 #' @param factor_list 
 #' @param num_iterations number of time points
