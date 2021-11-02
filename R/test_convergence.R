@@ -3,8 +3,8 @@
 #' @param factor_list 
 #' @param num_iterations number of time points
 #' @param pop_params 
-#' @param response_group_size
-#' @return  data table
+#' @param xresponse_group_size
+#' @return  
 #' @export
 test_convergence <- function(factor_list, num_iterations, pop_params, response_group_size) {
   
