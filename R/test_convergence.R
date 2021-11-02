@@ -1,10 +1,10 @@
-#' vTests effectiveness of starting value procedure. 
+#' Tests effectiveness of starting value procedure. 
 #'
 #' @param factor_list 
 #' @param num_iterations number of time points
 #' @param pop_params 
-#' @param xresponse_group_size
-#' @return  
+#' @param response_group_size
+#' @return  data table
 #' @export
 test_convergence <- function(factor_list, num_iterations, pop_params, response_group_size) {
   
