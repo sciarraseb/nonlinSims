@@ -9,7 +9,7 @@
 compute_measurement_schedule <- function(time_period, num_measurements, base_time_length, measurement_spacing) {
   
   if (measurement_spacing == 'equal') {
-    interval_length_list <- compute_equal_spacing_schedule(time_period, num_measurements, base_time_length)
+    interval_length_list <- compute_equal_spacing_schedule(time_period, num_measurements)
   }
   
   else if(measurement_spacing == 'time_inc') {
