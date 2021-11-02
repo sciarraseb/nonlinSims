@@ -1,8 +1,10 @@
-#' Scales times values according to the designated time period (new comment).
+#' vTests effectiveness of starting value procedure. 
 #'
-#' @param time_period number of days over which change occurs
-#' @param num_time_points number of time points
-#' @return Returns a data table.
+#' @param factor_list 
+#' @param num_iterations number of time points
+#' @param pop_params 
+#' @param xresponse_group_size
+#' @return  
 #' @export
 test_convergence <- function(factor_list, num_iterations, pop_params, response_group_size) {
   

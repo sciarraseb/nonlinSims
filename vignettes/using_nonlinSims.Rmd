@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(easypackages)
-packages <- c('tidyverse', 'data.table', 'nonlinSims', 'nlraa', "OpenMx", 'devtools')
+packages <- c('tidyverse', 'data.table', "OpenMx", 'devtools')
 libraries(packages)
 
 #packages to load: tidyverse, data.table, 
