@@ -7,7 +7,7 @@
 test_convergence <- function(factor_list, num_iterations, pop_params, response_group_size) {
   
   #compute experiment conditions
-  exp_conditions <- expand.grid(factor_list)
+  exp_conditions <- data.table(expand.grid(factor_list))
   perc_converge <- c()
   
   for (condition in 1:nrow(exp_conditions)) {
