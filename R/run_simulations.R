@@ -6,7 +6,7 @@
 #' @param response_group_size sample size  
 #' @return Returns a data table.
 #' @export
-compute_mult_simulations <- function(num_iterations, pop_params, cov_matrix, schedule, response_group_size){
+run_simulations <- function(num_iterations, pop_params, cov_matrix, schedule, response_group_size){
   
   results <- parallel::mclapply(X = 1:num_iterations, FUN = compute_ind_simulation, 
                       pop_params = pop_params, 
