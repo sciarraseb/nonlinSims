@@ -1,6 +1,6 @@
-#' Generates scores at each time point for one person.
+#' Generates scores at each time point for each person.
 #'
-#' Description of function.
+#' Scores are generates according to three-parameter logistic function. 
 #' @md
 #' @param num_measurements number of measurements
 #' @param param_table table containing parameter values for each person

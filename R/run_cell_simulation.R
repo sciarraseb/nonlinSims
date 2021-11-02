@@ -1,7 +1,9 @@
-#' Scales times values according to the designated time period (new comment).
+#' Runs Monte Carlo simulations.
 #'
-#' @param time_period number of days over which change occurs
-#' @param num_time_points number of time points
+#' @param num_iterations number of iterations 
+#' @param pop_params list of population parameters 
+#' @param schedule measurement schedule
+#' @param response_group_size sample size  
 #' @return Returns a data table.
 #' @export
 compute_mult_simulations <- function(num_iterations, pop_params, cov_matrix, schedule, response_group_size){

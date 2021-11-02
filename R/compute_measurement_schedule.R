@@ -1,8 +1,10 @@
-#' Scales times values according to the designated time period (new comment).
+#' Computes measurement schedules. 
 #'
 #' @param time_period number of days over which change occurs
-#' @param num_time_points number of time points
-#' @return Returns a data table.
+#' @param num_measurements number of measurements
+#' @param measurement_spacing type of measurement spacing (one of 'equal', 'time_inc', 'time_dec', and 'mid_ext')
+#' @param base_time_length length of smallest intervals 
+#' @return Returns a list.
 #' @export
 compute_measurement_schedule <- function(time_period, num_measurements, base_time_length, measurement_spacing) {
   
@@ -29,7 +31,7 @@ compute_measurement_schedule <- function(time_period, num_measurements, base_tim
   return(interval_length_list)
 }
 
-compute_equal_spacing_schedule <- function(time_period, num_measurements, base_time_length){
+compute_equal_spacing_schedule <- function(time_period, num_measurements){
   
   #first determine the days on which measurements are taken
   num_intervals <- num_measurements - 1

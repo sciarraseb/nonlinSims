@@ -2,13 +2,11 @@
 #'
 #' The four parameters that characterize the logistic pattern of change take on the
 #' following meanings:
-#' * theta: beginning value (or value at first plateau)
-#' * alpha: last value (or value at second plateau)
+#' * diff: different between first and last values (i.e., difference between two plateaus)
 #' * beta: amount of time to reach midway point (i.e., 50% of the distance between theta and alpha) from time = 0
 #' * gamma: amount of time to reach satiation point (i.e., 73% of distance between theta and alpha) from midpoint
 #' @md
-#' @param theta_fixed fixed-effect value for theta
-#' @param alpha_fixed fixed-effect value for alpha
+#' @param diff_fixed fixed-effect value for diff
 #' @param beta_fixed fixed-effect value for beta
 #' @param gamma_fixed fixed-effect value for gamma
 #'

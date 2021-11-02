@@ -6,14 +6,12 @@
 #' at each time point are set to 0 by default (cor_param_error = 0). Internally, the function also assumes zero-value correlations between
 #' error variances at each time point  The four parameters that characterize the logistic pattern of change take on the
 #' following meanings:
-#' * theta: beginning value (or value at first plateau)
-#' * alpha: last value (or value at second plateau)
+#' * diff: different between first and last values (i.e., difference between two plateaus)
 #' * beta: amount of time to reach midway point (i.e., 50% of the distance between theta and alpha) from time = 0
 #' * gamma: amount of time to reach satiation point (i.e., 73% of distance between theta and alpha) from midpoint
 #' @md
 #' @param num_time_points number of time points
 #' @param pop_param_list list of population parameters returned from generate_pop_param_list
-#' @param empty_cov_matrix empty covariance matrix created from create_empty_cov_matrix
 #' @return Returns a covariance matrix.
 #' @export
 generate_three_param_cov_matrix <- function(num_time_points, pop_param_list) {

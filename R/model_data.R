@@ -1,14 +1,14 @@
 #' Analyzes data with nonlinear latent growth curve model.
 #'
-#' Description of function.
+#' Data are modelled with a structured latent growth curve model.
 #' @md
-#' @param data number of measurements
-#' @param param_table table containing parameter values for each person
-#' @param measurement_days days of measurement
-#' @param time_period length of time over which measurements are taken
-#' @return Returns a data table.
+#' @param data_wide wide version of data 
+#' @param model_name name of model 
 #' @export
 create_logistic_growth_model <- function(data_wide, model_name) {
+  
+  #initial checks 
+  tryCatch(expr = model_name, error = function(e) {message("Error: model_name is not a character vector")})
   
   manifest_vars <- generate_manifest_var_names(data = data_wide)
   latent_vars <- c('diff', 'beta', 'gamma')
@@ -80,7 +80,6 @@ create_logistic_growth_model <- function(data_wide, model_name) {
   
   return(model)
 }
-
 
 generate_manifest_var_names <- function(data_wide) {
   
