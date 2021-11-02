@@ -2,7 +2,7 @@
 % Please edit documentation in R/generate_person_scores.R
 \name{generate_group_scores}
 \alias{generate_group_scores}
-\title{Generates scores at each time point for one person.}
+\title{Generates scores at each time point for each person.}
 \usage{
 generate_group_scores(
   num_measurements,
@@ -25,5 +25,5 @@ generate_group_scores(
 Returns a data table.
 }
 \description{
-Description of function.
+Scores are generates according to three-parameter logistic function.
 }

@@ -18,9 +18,7 @@ generate_ind_param_values(
 
 \item{cov_matrix}{covariance matrix generated from generate_cov_matrix}
 
-\item{theta_fixed}{fixed-effect value for theta}
-
-\item{alpha_fixed}{fixed-effect value for alpha}
+\item{diff_fixed}{fixed-effect value for diff}
 
 \item{beta_fixed}{fixed-effect value for beta}
 
@@ -33,8 +31,7 @@ Returns a data table.
 The four parameters that characterize the logistic pattern of change take on the
 following meanings:
 \itemize{
-\item theta: beginning value (or value at first plateau)
-\item alpha: last value (or value at second plateau)
+\item diff: different between first and last values (i.e., difference between two plateaus)
 \item beta: amount of time to reach midway point (i.e., 50\% of the distance between theta and alpha) from time = 0
 \item gamma: amount of time to reach satiation point (i.e., 73\% of distance between theta and alpha) from midpoint
 }

@@ -10,8 +10,6 @@ generate_three_param_cov_matrix(num_time_points, pop_param_list)
 \item{num_time_points}{number of time points}
 
 \item{pop_param_list}{list of population parameters returned from generate_pop_param_list}
-
-\item{empty_cov_matrix}{empty covariance matrix created from create_empty_cov_matrix}
 }
 \value{
 Returns a covariance matrix.
@@ -24,8 +22,7 @@ at each time point are set to 0 by default (cor_param_error = 0). Internally, th
 error variances at each time point  The four parameters that characterize the logistic pattern of change take on the
 following meanings:
 \itemize{
-\item theta: beginning value (or value at first plateau)
-\item alpha: last value (or value at second plateau)
+\item diff: different between first and last values (i.e., difference between two plateaus)
 \item beta: amount of time to reach midway point (i.e., 50\% of the distance between theta and alpha) from time = 0
 \item gamma: amount of time to reach satiation point (i.e., 73\% of distance between theta and alpha) from midpoint
 }

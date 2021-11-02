@@ -2,7 +2,7 @@
 % Please edit documentation in R/compute_measurement_schedule.R
 \name{compute_measurement_schedule}
 \alias{compute_measurement_schedule}
-\title{Scales times values according to the designated time period (new comment).}
+\title{Computes measurement schedules.}
 \usage{
 compute_measurement_schedule(
   time_period,
@@ -14,11 +14,15 @@ compute_measurement_schedule(
 \arguments{
 \item{time_period}{number of days over which change occurs}
 
-\item{num_time_points}{number of time points}
+\item{num_measurements}{number of measurements}
+
+\item{base_time_length}{length of smallest intervals}
+
+\item{measurement_spacing}{type of measurement spacing (one of 'equal', 'time_inc', 'time_dec', and 'mid_ext')}
 }
 \value{
-Returns a data table.
+Returns a list.
 }
 \description{
-Scales times values according to the designated time period (new comment).
+Computes measurement schedules.
 }
