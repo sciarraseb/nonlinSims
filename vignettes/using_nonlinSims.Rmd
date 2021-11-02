@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(easypackages)
-packages <- c('tidyverse', 'data.table', "OpenMx", 'devtools')
+packages <- c('tidyverse', 'data.table', "OpenMx", 'devtools', 'nonlinSims')
 libraries(packages)
 
 #packages to load: tidyverse, data.table, 
@@ -119,7 +119,7 @@ factor_list <- list(spacing = c("equal", "time_inc", "time_dec", "mid_ext"),
                       num_measurements = seq(from = 5, to = 11, by = 2), 
                       midpoint =  seq(from = 80, to = 280, by = 100))
 
-test_convergence(factor_list = factor_list, num_iterations = 1, pop_params = pop_params, response_group_size = 225)
+test_convergence(factor_list = factor_list, num_iterations = 1, pop_params = pop_params, response_group_size = 225, num_cores = 3)
 
 ```
 

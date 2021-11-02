@@ -6,7 +6,7 @@
 #' @param xresponse_group_size
 #' @return  Returns a data table
 #' @export
-test_convergence <- function(factor_list, num_iterations, pop_params, response_group_size) {
+test_convergence <- function(factor_list, num_iterations, pop_params, response_group_size, num_cores) {
   
   #compute experiment conditions
   exp_conditions <- data.table(expand.grid(factor_list))
@@ -33,7 +33,8 @@ test_convergence <- function(factor_list, num_iterations, pop_params, response_g
                                                    pop_params = pop_params,
                                                    cov_matrix = cov_matrix, 
                                                    schedule = schedule, 
-                                                   response_group_size = response_group_size)
+                                                   response_group_size = response_group_size, 
+                                                   num_cores = num_cores)
    
     perc_converge[condition] <- sum(convergence_results$code == 0)/num_iterations
   }

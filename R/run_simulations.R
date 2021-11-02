@@ -6,14 +6,14 @@
 #' @param response_group_size sample size  
 #' @return Returns a data table.
 #' @export
-run_simulations <- function(num_iterations, pop_params, cov_matrix, schedule, response_group_size){
+run_simulations <- function(num_iterations, pop_params, cov_matrix, schedule, response_group_size, num_cores){
   
   results <- parallel::mclapply(X = 1:num_iterations, FUN = compute_ind_simulation, 
                       pop_params = pop_params, 
                       cov_matrix = cov_matrix, 
                       schedule = schedule,
                       response_group_size = 30, 
-                      mc.cores = parallel::detectCores() - 1)
+                      mc.cores = num_cores)
   
   #extract column names first
   col_names <- names(results[[1]])
