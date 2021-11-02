@@ -29,7 +29,7 @@ generate_ind_param_values <- function(pop_param_list,
   random_effects <-  mvnfast::rmvn(n = response_group_size,
                                    mu=rep(0, times = nrow(cov_matrix)),
                                    sigma = cov_matrix, 
-                                   ncores = detectCores() - 1, kpnames = T) %>% as.data.table()
+                                   ncores = parallel::detectCores() - 1, kpnames = T) %>% as.data.table()
   
   var_names <- c('diff_random', 'beta_random', 'gamma_random')
   colnames(random_effects) = c(var_names, sprintf(fmt = 'error_%d', 0:(num_time_points - 1)))
