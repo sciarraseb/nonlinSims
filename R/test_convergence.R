@@ -29,7 +29,7 @@ test_convergence <- function(factor_list, num_iterations, pop_params, response_g
     cov_matrix <- generate_three_param_cov_matrix(num_time_points = num_measurements, pop_param_list = pop_params)
   
     #test convergence in each condition
-    convergence_results <- compute_mult_simulations(num_iterations = num_iterations, 
+    convergence_results <- run_simulations(num_iterations = num_iterations, 
                                                    pop_params = pop_params,
                                                    cov_matrix = cov_matrix, 
                                                    schedule = schedule, 
