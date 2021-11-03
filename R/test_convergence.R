@@ -26,7 +26,7 @@ test_convergence <- function(factor_list, num_iterations, pop_params, response_g
                                     midpoint_value = exp_conditions$midpoint[condition],
                                     mc.cores = 3)
 
-    perc_converge_total[condition] <- perc_converge
+    perc_converge_total[condition] <- unlist(perc_converge)
   
   }
   
