@@ -4,7 +4,13 @@
 \alias{test_convergence}
 \title{Tests effectiveness of starting value procedure.}
 \usage{
-test_convergence(factor_list, num_iterations, pop_params, response_group_size)
+test_convergence(
+  factor_list,
+  num_iterations,
+  pop_params,
+  response_group_size,
+  num_cores
+)
 }
 \arguments{
 \item{factor_list}{}
