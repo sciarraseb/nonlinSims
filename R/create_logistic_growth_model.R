@@ -28,7 +28,7 @@ create_logistic_growth_model <- function(data_wide, model_name) {
                           arrows=2, free=TRUE, values = 1, labels='epsilon',  lbound = 1e-3),
                    
                    #Set manifest means to observed means
-                   mxPath(from = 'one', to = manifest_vars, free = FALSE, arrows = 1, values = 3),
+                   mxPath(from = 'one', to = manifest_vars, free = FALSE, arrows = 1, values = manifest_means),
                    
                    #Latent variable covariances and variances
                    mxPath(from = latent_vars,
@@ -53,11 +53,11 @@ create_logistic_growth_model <- function(data_wide, model_name) {
                    
                    #Functional constraints
                    mxMatrix(type = 'Full', nrow = length(manifest_vars), ncol = 1, free = TRUE, 
-                            values = 1, labels = 'diff_fixed', name = 'd', lbound = 0, ubound = 2),
+                            values = 1, labels = 'diff_fixed', name = 'd', lbound = 0.1, ubound = 2),
                    mxMatrix(type = 'Full', nrow = length(manifest_vars), ncol = 1, free = TRUE, 
-                            values = 1, labels = 'beta_fixed', name = 'b', lbound = 0, ubound = 360),
+                            values = 1, labels = 'beta_fixed', name = 'b', lbound = 0.1, ubound = 360),
                    mxMatrix(type = 'Full', nrow = length(manifest_vars), ncol = 1, free = TRUE, 
-                             labels = 'gamma_fixed', name = 'g', lbound = 0, ubound = 360),
+                            labels = 'gamma_fixed', name = 'g', lbound = 0.1, ubound = 360),
                    mxMatrix(type = 'Full', nrow = length(manifest_vars), ncol = 1, free = FALSE, 
                             values = measurement_days, name = 'time'),
                    
@@ -68,12 +68,12 @@ create_logistic_growth_model <- function(data_wide, model_name) {
                    
                    #Factor loadings; all fixed and, importantly, constrained to change according to their partial derivatives (i.e., nonlinear functions) 
                    mxPath(from = 'diff', to = manifest_vars, arrows=1, free=FALSE,  
-                          labels = c("Dl[1,1]", "Dl[2,1]", "Dl[3,1]", "Dl[4,1]", "Dl[5,1]")), #sprintf(fmt = 'Dl[%d,1]', 1:(ncol(data_wide)-1))), 
+                          labels = sprintf(fmt = 'Dl[%d,1]', 1:(ncol(data_wide)-1))),  
                    mxPath(from='beta', to = manifest_vars, arrows=1,  free=FALSE,
-                          labels =  c("Bl[1,1]", "Bl[2,1]", "Bl[3,1]", "Bl[4,1]", "Bl[5,1]")),
+                          labels =  sprintf(fmt = 'Bl[%d,1]', 1:(ncol(data_wide)-1))),
                    mxPath(from='gamma', to = manifest_vars, arrows=1,  free=FALSE,
-                          labels =  c("Gl[1,1]", "Gl[2,1]", "Gl[3,1]", "Gl[4,1]", "Gl[5,1]")), #sprintf(fmt = 'Gl[%d,1]', 1:(ncol(data_wide)-1))),
-                   
+                          labels =  sprintf(fmt = 'Gl[%d,1]', 1:(ncol(data_wide)-1))),
+
                    mxFitFunctionML(vector = FALSE)
                    
   )

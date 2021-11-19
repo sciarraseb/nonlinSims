@@ -1,0 +1,87 @@
+---
+title: "Installing RStudio server on Amazon instance"
+output: pdf_document
+---
+
+```{r amazon_linux, bash}
+#move pem file to ssh folder 
+sudo mv /Users/sebastiansciarra/Desktop/RedHat_key.pem ~/.ssh
+
+#enable 600 status access
+sudo chmod 600 ~/.ssh
+
+#connect to Amazon instance (superuser privilege needed; note public DNS changes each time instance is booted)
+sudo ssh -i ~/.ssh/RStudio_key3pem.pem ec2-user@ec2-3-96-198-117.ca-central-1.compute.amazonaws.com
+sudo ssh -i ~/.ssh/RedHat_key.pem ec2-user@ec2-3-96-198-117.ca-central-1.compute.amazonaws.com
+  
+  
+#install R (c code, base packages, command prompt)
+sudo amazon-linux-extras install R4
+
+#Step 3: RStudio  
+wget https://download2.rstudio.org/server/centos7/x86_64/rstudio-server-rhel-2021.09.1-372-x86_64.rpm
+sudo yum -y reinstall rstudio-server-rhel-2021.09.1-372-x86_64.rpm
+sudo rm rstudio-server-rhel-2021.09.1-372-x86_64.rpm
+
+#Install following software to enable loading of certain R packages (i.e., devtools, tidyverse, data.table)
+sudo yum install libxml2-devel
+sudo yum install openssl-devel
+sudo yum install libcurl-devel
+
+#Step 4: 
+# Install some useful R Packages (be a little patient here)
+sudo R -e "install.packages('RCurl', repos='http://cran.rstudio.com')"
+sudo R -e "install.packages('devtools', repos='http://cran.rstudio.com')"
+sudo R -e "install.packages('tidyverse', repos='http://cran.rstudio.com')"
+sudo R -e "install.packages('RMariaDB')"
+
+#add username 
+sudo useradd sciarraseb
+sudo passwd sciarraseb #enter password twice 
+sudo cat /etc/shadow
+
+
+
+#install java
+sudo yum install java-1.8.0-openjdk-devel 
+sudo R CMD javareconf
+
+#go to link 
+http://ec2-3-96-186-155.ca-central-1.compute.amazonaws.com:8787/auth-sign-in?appUri=%2F&error=1
+
+```
+
+```{r microsoft_instance, bash}
+#move pem file to ssh folder 
+sudo mv /Users/sebastiansciarra/Desktop/RedHat_key.pem ~/.ssh
+
+#enable 600 status access
+sudo chmod 600 ~/.ssh/Windows_key.pem
+
+sudo ssh -i ~/.ssh/Windows_key.pem Administrator@ec2-3-96-183-116.ca-central-1.compute.amazonaws.com
+
+install R (c code, base packages, command prompt)
+sudo amazon-linux-extras install R4
+
+#Step 3: RStudio  
+wget https://download2.rstudio.org/server/centos7/x86_64/rstudio-server-rhel-2021.09.1-372-x86_64.rpm
+sudo yum -y reinstall rstudio-server-rhel-2021.09.1-372-x86_64.rpm
+sudo rm rstudio-server-rhel-2021.09.1-372-x86_64.rpm
+
+#Install following software to enable loading of certain R packages (i.e., devtools, tidyverse, data.table)
+sudo yum install libxml2-devel
+sudo yum install openssl-devel
+sudo yum install libcurl-devel
+
+#Step 4: 
+# Install some useful R Packages (be a little patient here)
+sudo R -e "install.packages('RCurl', repos='http://cran.rstudio.com')"
+sudo R -e "install.packages('devtools', repos='http://cran.rstudio.com')"
+sudo R -e "install.packages('tidyverse', repos='http://cran.rstudio.com')"
+sudo R -e "install.packages('RMariaDB')"
+
+#add username 
+sudo useradd sciarraseb
+sudo passwd sciarraseb #enter password twice 
+sudo cat /etc/shadow
+```

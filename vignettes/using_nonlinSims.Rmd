@@ -17,9 +17,17 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
+#library(devtools)
+#install_github("sciarraseb/nonlinSims", dependencies = T, force=T)
+#library(easypackages)
+#library(nonlinSims)
+#library(parallel)
+#library(tidyverse)
+#library(OpenMx)
 library(easypackages)
-packages <- c('tidyverse', 'data.table', "OpenMx", 'devtools', 'nonlinSims')
+packages <- c('nonlinSims', 'parallel', 'tidyverse', "OpenMx", "data.table")
 libraries(packages)
+
 
 #packages to load: tidyverse, data.table, 
 ```
@@ -77,8 +85,28 @@ pop_params <- generate_three_param_pop_curve(diff_fixed = diff_fixed, beta_fixed
                                cor_diff_beta = cor_diff_beta, cor_diff_gamma = cor_diff_gamma, cor_beta_gamma = cor_beta_gamma,
                                scaling_constant = scaling_constant)
 
-cov_matrix <- generate_three_param_cov_matrix(num_time_points = num_measurements, pop_param_list = pop_params)
+factor_list <- list(spacing = c("equal", "time_inc", "time_dec", "mid_ext"),
+                      num_measurements = seq(from = 5, to = 11, by = 2), 
+                      midpoint =  seq(from = 80, to = 280, by = 100))
 
+factor_list <- list(spacing = c("equal"),
+                    num_measurements = seq(from = 9, to = 9, by = 2), 
+                    midpoint =  seq(from = 80, to = 80, by = 100))
+
+library(tictoc)
+require(snowfall)
+sfInit(parallel=TRUE, cpus = detectCores() - 1) 
+sfLibrary(OpenMx)
+
+test_convergence(factor_list = factor_list, num_iterations = 5, pop_params = pop_params, 
+                 response_group_size = 225, num_cores = detectCores() - 1)
+sfStop()
+
+
+
+##Test of OpenMx code
+# Debugging attempt -------------------------------------------------------
+cov_matrix <- generate_three_param_cov_matrix(num_time_points = num_measurements, pop_param_list = pop_params)
 
 param_table <- generate_ind_param_values(pop_param_list = pop_params, 
                                          response_group_size = 100, 
@@ -92,21 +120,44 @@ data <- generate_group_scores(num_measurements = num_measurements,
 data_wide <- pivot_wider(data = data[ ,1:3], names_from = 'measurement_day', values_from = 'obs_score', 
                          names_prefix = sprintf('t%d_', 1:uniqueN(data$measurement_day)))
 
-names(data_wide)[-1] <- generate_manifest_var_names(data_wide)
+names(data_wide)[-1] <- nonlinSims:::generate_manifest_var_names(data_wide)
 
+
+mxVersion()
+test_data <- read_csv(file = 'test_data.csv')
+test_data #proof that same data set is being modeled 
+model <- create_logistic_growth_model(data_wide = test_data, model_name = 'test')
+
+
+##error occurs when determining good starting values; insert breakpoint at OpenMx:::match.barg(type)
+mxAutoStart_local <- function (model, type = c("ULS", "DWLS")) 
+{
+  OpenMx:::warnModelCreatedByOldVersion(model)
+  if (is(model$expectation, "MxExpectationGREML")) {
+    return(autoStartGREML(model))
+  }
+  type <- OpenMx:::match.barg(type)
+  defaultComputePlan <- (is.null(model@compute) || is(model@compute, 
+                                                      "MxComputeDefault"))
+  if (!defaultComputePlan) {
+    customPlan <- model@compute
+    model@compute <- NULL
+  }
+  wmodel <- mxRun(omxBuildAutoStartModel(model, type), silent = TRUE)
+  newparams <- coef(wmodel)
+  oldparams <- coef(model)
+  model <- omxSetParameters(model, values = newparams, labels = names(oldparams))
+  if (!defaultComputePlan) {
+    model@compute <- customPlan
+  }
+  return(model)
+}
+
+#overwrite model with default starting values
 model <- create_logistic_growth_model(data_wide = data_wide, model_name = 'test')
 
-mxAutoStart(model)
-
-# equal                9       80
-
-factor_list <- list(spacing = c("equal", "time_inc", "time_dec", "mid_ext"),
-                      num_measurements = seq(from = 5, to = 11, by = 2), 
-                      midpoint =  seq(from = 80, to = 280, by = 100))
-
-
-test_convergence(factor_list = factor_list, num_iterations = 1, pop_params = pop_params, response_group_size = 225, num_cores = 3)
-
+#error code is replicated
+model <- mxAutoStart_local(model = model)
 ```
 
 
