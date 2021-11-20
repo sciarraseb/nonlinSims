@@ -49,7 +49,7 @@ create_logistic_growth_model <- function(data_wide, model_name) {
                    
                    #Latent variable means (linear parameters). Note that the nonlinear parameters of beta and gamma do not have estimated means
                    mxPath(from = 'one', to = 'diff', free = TRUE, arrows = 1, values = 1,
-                          labels = 'diff_fixed', lbound = 0, ubound = 2),
+                          labels = 'diff_fixed', lbound = 0.1, ubound = 2),
                    
                    #Functional constraints
                    mxMatrix(type = 'Full', nrow = length(manifest_vars), ncol = 1, free = TRUE, 

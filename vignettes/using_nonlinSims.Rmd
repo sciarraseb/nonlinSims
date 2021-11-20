@@ -120,38 +120,12 @@ data <- generate_group_scores(num_measurements = num_measurements,
 data_wide <- pivot_wider(data = data[ ,1:3], names_from = 'measurement_day', values_from = 'obs_score', 
                          names_prefix = sprintf('t%d_', 1:uniqueN(data$measurement_day)))
 
-names(data_wide)[-1] <- nonlinSims:::generate_manifest_var_names(data_wide)
+names(data_wide)[-1] <- nonlinSims:::generate_manifest_var_names(data_wide) 
 
-
-mxVersion()
-test_data <- read_csv(file = 'test_data.csv')
-test_data #proof that same data set is being modeled 
-model <- create_logistic_growth_model(data_wide = test_data, model_name = 'test')
-
+model <- create_logistic_growth_model(data_wide = data_wide, model_name = 'test')
+mxAutoStart(model)
 
 ##error occurs when determining good starting values; insert breakpoint at OpenMx:::match.barg(type)
-mxAutoStart_local <- function (model, type = c("ULS", "DWLS")) 
-{
-  OpenMx:::warnModelCreatedByOldVersion(model)
-  if (is(model$expectation, "MxExpectationGREML")) {
-    return(autoStartGREML(model))
-  }
-  type <- OpenMx:::match.barg(type)
-  defaultComputePlan <- (is.null(model@compute) || is(model@compute, 
-                                                      "MxComputeDefault"))
-  if (!defaultComputePlan) {
-    customPlan <- model@compute
-    model@compute <- NULL
-  }
-  wmodel <- mxRun(omxBuildAutoStartModel(model, type), silent = TRUE)
-  newparams <- coef(wmodel)
-  oldparams <- coef(model)
-  model <- omxSetParameters(model, values = newparams, labels = names(oldparams))
-  if (!defaultComputePlan) {
-    model@compute <- customPlan
-  }
-  return(model)
-}
 
 #overwrite model with default starting values
 model <- create_logistic_growth_model(data_wide = data_wide, model_name = 'test')
