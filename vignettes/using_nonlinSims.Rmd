@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 #library(nonlinSims)
 #library(parallel)
 #library(tidyverse)
-#library(OpenMx)
+#ibrary(OpenMx)
 library(easypackages)
 packages <- c('nonlinSims', 'parallel', 'tidyverse', "OpenMx", "data.table")
 libraries(packages)
@@ -90,73 +90,18 @@ factor_list <- list(spacing = c("equal", "time_inc", "time_dec", "mid_ext"),
                       midpoint =  seq(from = 80, to = 280, by = 100))
 
 factor_list <- list(spacing = c("equal"),
-                    num_measurements = seq(from = 9, to = 9, by = 2), 
+                    num_measurements = seq(from = 9, to = 11, by = 2), 
                     midpoint =  seq(from = 80, to = 80, by = 100))
 
-library(tictoc)
-require(snowfall)
-sfInit(parallel=TRUE, cpus = detectCores() - 1) 
-sfLibrary(OpenMx)
-
-test_convergence(factor_list = factor_list, num_iterations = 5, pop_params = pop_params, 
-                 response_group_size = 225, num_cores = detectCores() - 1)
-sfStop()
+devtools::load_all()
 
 
+test_convergence(factor_list = factor_list, num_iterations = 2, pop_params = pop_params, response_group_size = 225, num_cores = 3)
 
-##Test of OpenMx code
-# Debugging attempt -------------------------------------------------------
-cov_matrix <- generate_three_param_cov_matrix(num_time_points = num_measurements, pop_param_list = pop_params)
 
-param_table <- generate_ind_param_values(pop_param_list = pop_params, 
-                                         response_group_size = 100, 
-                                         num_time_points = num_measurements, 
-                                         cov_matrix = cov_matrix)
-
-data <- generate_group_scores(num_measurements = num_measurements, 
-                              param_table = param_table,measurement_days = schedule$measurement_days, 
-                              time_period = 360, scaling_constant = 3)
-
-data_wide <- pivot_wider(data = data[ ,1:3], names_from = 'measurement_day', values_from = 'obs_score', 
-                         names_prefix = sprintf('t%d_', 1:uniqueN(data$measurement_day)))
-
-names(data_wide)[-1] <- nonlinSims:::generate_manifest_var_names(data_wide) 
-
-model <- create_logistic_growth_model(data_wide = data_wide, model_name = 'test')
-mxAutoStart(model)
-
-##error occurs when determining good starting values; insert breakpoint at OpenMx:::match.barg(type)
-
-#overwrite model with default starting values
-model <- create_logistic_growth_model(data_wide = data_wide, model_name = 'test')
-
-#error code is replicated
-model <- mxAutoStart_local(model = model)
 ```
 
 
-```{r echo=F}
-schedule <- compute_measurement_schedule(time_period = 360, num_measurements = 11, base_time_length = 30, measurement_spacing = 'time_inc')
-cov_matrix <- generate_three_param_cov_matrix(num_time_points = 11, pop_param_list = pop_params)
-
-param_table <- generate_ind_param_values(pop_param_list = pop_params, 
-                                           response_group_size = 100, 
-                                           num_time_points = 11, 
-                                           cov_matrix = cov_matrix)
-  
-data <- generate_group_scores(num_measurements = 11, 
-                                param_table = param_table,measurement_days = schedule$measurement_days, 
-                                time_period = 360, scaling_constant = 3)
-  
-data_wide <- pivot_wider(data = data[ ,1:3], names_from = 'measurement_day', values_from = 'obs_score', 
-                           names_prefix = sprintf('t%d_', 1:uniqueN(data$measurement_day)))
-
-
-create_logistic_growth_model(data_wide = data_wide, model_name = 'nl')
-names(data_wide)[-1] <- generate_manifest_var_names(data_wide)
-load_all()
-
-```
 
 
 ```{r errors-to-fix}

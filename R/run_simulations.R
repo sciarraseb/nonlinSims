@@ -6,21 +6,14 @@
 #' @param response_group_size sample size  
 #' @return Returns a data table.
 #' @export
-run_simulations <- function(num_iterations, pop_params, cov_matrix, schedule, response_group_size){
-  
-  #results <- parallel::mclapply(X = 1:num_iterations, FUN = compute_ind_simulation, 
-  #                    pop_params = pop_params, 
-  #                    cov_matrix = cov_matrix, 
-  #                    schedule = schedule,
-  #                    response_group_size = 30, 
-  #                    mc.cores = num_cores)
-#
-  
+run_simulations <- function(num_iterations, pop_params, cov_matrix, measurement_spacing, schedule, response_group_size){
+
   results <- lapply(X = 1:num_iterations, FUN = compute_ind_simulation, 
-                                                    pop_params = pop_params, 
+                                                    pop_params = pop_params,
                                                     cov_matrix = cov_matrix, 
                                                     schedule = schedule,
-                                                    response_group_size = 30)
+                                                    measurement_spacing = measurement_spacing, 
+                                                    response_group_size = response_group_size)
                                                 
   
   #extract column names first
@@ -35,7 +28,7 @@ run_simulations <- function(num_iterations, pop_params, cov_matrix, schedule, re
 
 }
 
-compute_ind_simulation <- function(num_iterations, pop_params, cov_matrix, schedule, response_group_size){
+compute_ind_simulation <- function(num_iterations, pop_params, cov_matrix, measurement_spacing, schedule, response_group_size){
   
   #setup variables
   num_measurements <- ncol(cov_matrix) - 3
@@ -64,9 +57,12 @@ compute_ind_simulation <- function(num_iterations, pop_params, cov_matrix, sched
   #run model with 10 different sets of starting values 
   model_results <- mxTryHard(latent_growth_model)
   
-  #indicate model status 
-  analysis_output <- c('code' = model_results$output$status$status,
-                       'status' = model_results$output$status$code, 
+  #return simulation parameter values, random seed number, & convergence output 
+  analysis_output <- c('number_measurements' = ncol(data_wide) - 1, 
+                       'measurement_spacing' = measurement_spacing, 
+                       'midpoint' = pop_params$beta_fixed, 
+                       'status' = model_results$output$status$status,
+                       'code' = model_results$output$status$code, 
                        'minus_2_likelihood' = model_results$output$Minus2LogLikelihood)
                               
 

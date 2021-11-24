@@ -8,6 +8,7 @@ run_simulations(
   num_iterations,
   pop_params,
   cov_matrix,
+  measurement_spacing,
   schedule,
   response_group_size
 )
