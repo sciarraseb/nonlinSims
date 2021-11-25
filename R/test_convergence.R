@@ -11,12 +11,14 @@ test_convergence <- function(factor_list, num_iterations, pop_params, response_g
   
   #compute experiment conditions
   exp_conditions <- data.table(expand.grid(factor_list))
+  exp_conditions$spacing <- as.character(exp_conditions$spacing)
+  
   total_results <- data.table()
   
   if (.Platform$OS.type == 'windows') {
     
     #open clusters
-    simulation_cluster <- makeCluster(spec = 8)
+    simulation_cluster <- makeCluster(spec = num_cores)
     
     #load relevant variables into cluster
     clusterExport(cl = simulation_cluster, varlist = list("exp_conditions", "total_results"))
@@ -35,15 +37,15 @@ test_convergence <- function(factor_list, num_iterations, pop_params, response_g
     for (condition in 1:nrow(exp_conditions)) {
       
       iteration_results <- as.data.table(parLapply(cl = simulation_cluster, X = num_iterations, 
-                                                  fun = test_condition, 
-                                                  pop_params = pop_params, 
-                                                  response_group_size = response_group_size, 
-                                                  num_measurements = exp_conditions$num_measurements[condition], 
-                                                  measurement_spacing = exp_conditions$spacing[condition], 
-                                                  midpoint_value = exp_conditions$midpoint[condition]))
+                                                   fun = test_condition, 
+                                                   pop_params = pop_params, 
+                                                   response_group_size = response_group_size, 
+                                                   num_measurements = exp_conditions$num_measurements[condition], 
+                                                   measurement_spacing = exp_conditions$spacing[condition], 
+                                                   midpoint_value = exp_conditions$midpoint[condition]))
       
       total_results <- rbind(total_results, iteration_results)
-     }
+    }
     
     #export data set 
     clusterExport(cl = simulation_cluster, varlist = list('total_results'))
@@ -53,24 +55,24 @@ test_convergence <- function(factor_list, num_iterations, pop_params, response_g
     
   }
   
-
-  #test convergence in each condition
+  if(.Platform$OS.type == 'unix'){
+    #test convergence in each condition
     for (condition in 1:nrow(exp_conditions)) {
-    
+      
       iteration_results <- as.data.table(mclapply(X = num_iterations, 
-                                    FUN = test_condition, 
-                                    pop_params = pop_params, 
-                                    response_group_size = response_group_size, 
-                              
-                                    num_measurements = exp_conditions$num_measurements[condition], 
-                                    measurement_spacing = exp_conditions$spacing[condition], 
-                                    midpoint_value = exp_conditions$midpoint[condition],
-                                    mc.cores = num_cores))
-    
+                                                  FUN = test_condition, 
+                                                  pop_params = pop_params, 
+                                                  response_group_size = response_group_size, 
+                                                  
+                                                  num_measurements = exp_conditions$num_measurements[condition], 
+                                                  measurement_spacing = exp_conditions$spacing[condition], 
+                                                  midpoint_value = exp_conditions$midpoint[condition],
+                                                  mc.cores = num_cores))
+      
       total_results <- rbind(total_results, iteration_results)
-  
+      
     }
-
+  }
   return(total_results)
 }
 
