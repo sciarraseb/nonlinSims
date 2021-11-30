@@ -2,10 +2,9 @@
 
 export(compute_measurement_schedule)
 export(create_logistic_growth_model)
-export(evaluate_convergence)
 export(generate_group_scores)
 export(generate_ind_param_values)
 export(generate_three_param_cov_matrix)
 export(generate_three_param_pop_curve)
-export(run_simulations)
+export(run_exp_simulation)
 import(data.table)
