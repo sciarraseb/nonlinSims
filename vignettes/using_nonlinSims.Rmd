@@ -18,15 +18,11 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 #library(devtools)
-#install_github("sciarraseb/nonlinSims", dependencies = T, force=T)
-#library(easypackages)
-#library(nonlinSims)
-#library(parallel)
-#library(tidyverse)
-#ibrary(OpenMx)
 library(easypackages)
-packages <- c('nonlinSims', 'parallel', 'tidyverse', "OpenMx", "data.table")
+packages <- c('devtools', 'nonlinSims', 'parallel', 'tidyverse', "OpenMx", "data.table")
 libraries(packages)
+
+#install_github("sciarraseb/nonlinSims", dependencies = T, force=T)
 
 
 #packages to load: tidyverse, data.table, 
@@ -69,35 +65,12 @@ cor_beta_gamma <- 0
 scaling_constant <- 3
                               
 
-#INDEPENDENT VARIABLE SETUP (note that sample size is fixed at 225)
-##Set beta values at 80, 180, and 280 
-beta_fixed <- seq(from = 80, to = 280, by = 100)[1]
+factor_list <- list('num_measurements' = seq(from = 5, to = 5, by = 2), 
+                    'spacing' = c('equal'),#, 'time_inc', 'time_dec', 'mid_ext'), 
+                    'midpoint' = seq(from = 80, to = 80, by = 100))
 
-#Set number of measurements to either 5, 7, 9, or 11
-num_measurements <- seq(from = 5, to = 11, by = 2)[4]
-
-##Iterate through all four spacing conditions: equal, time_inc, time_dec, and middle_ext
-schedule <- compute_measurement_schedule(time_period = 360, num_measurements = num_measurements, base_time_length = 30, measurement_spacing = 'equal')
-
-#Set up of population-level parameters
-pop_params <- generate_three_param_pop_curve(diff_fixed = diff_fixed, beta_fixed = beta_fixed, gamma_fixed = gamma_fixed, 
-                               sd_diff = sd_diff, sd_beta = sd_beta, sd_gamma = sd_gamma, sd_error = sd_error, 
-                               cor_diff_beta = cor_diff_beta, cor_diff_gamma = cor_diff_gamma, cor_beta_gamma = cor_beta_gamma,
-                               scaling_constant = scaling_constant)
-
-
-
-
-factor_list <- list(spacing = c("equal", "time_inc", "time_dec", "mid_ext"),
-                      num_measurements = seq(from = 5, to = 11, by = 2), 
-                      midpoint =  seq(from = 80, to = 280, by = 100))
-
-factor_list <- list(spacing = c("equal"),
-                    num_measurements = seq(from = 9, to = 11, by = 2), 
-                    midpoint =  seq(from = 80, to = 80, by = 100))
-
-devtools::load_all()
-test_convergence(factor_list = factor_list, num_iterations = 2, pop_params = pop_params, response_group_size = 225, num_cores = 3)
+set.seed(27)
+run_exp_simulation(factor_list = factor_list, num_iterations = 2, pop_params = pop_params, response_group_size = 225, num_cores = 3, seed = 27)
 
 
 ```
@@ -106,8 +79,19 @@ test_convergence(factor_list = factor_list, num_iterations = 2, pop_params = pop
 
 
 ```{r errors-to-fix}
-#1. Even number of measurements for compute measurement schedule. 
-#2. 
+
+set.seed(27)
+
+print_seed <- function() {
+  print(.Random.seed)
+}
+
+unlist(
+    mclapply(X = 1:10,
+             FUN = print_seed,
+             mc.set.seed = TRUE, mc.cores = 3)
+)
+
 
 ```
 

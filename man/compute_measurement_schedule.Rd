@@ -7,7 +7,7 @@
 compute_measurement_schedule(
   time_period,
   num_measurements,
-  base_time_length,
+  smallest_int_length,
   measurement_spacing
 )
 }
@@ -16,7 +16,7 @@ compute_measurement_schedule(
 
 \item{num_measurements}{number of measurements}
 
-\item{base_time_length}{length of smallest intervals}
+\item{smallest_int_length}{length of smallest intervals}
 
 \item{measurement_spacing}{type of measurement spacing (one of 'equal', 'time_inc', 'time_dec', and 'mid_ext')}
 }

@@ -6,7 +6,7 @@
 #' @param xresponse_group_size
 #' @return  Returns a data table
 #' @export
-test_convergence <- function(factor_list, num_iterations, pop_params, response_group_size, num_cores) {
+run_exp_simulation <- function(factor_list, num_iterations, pop_params, response_group_size, num_cores) {
   
   
   #compute experiment conditions
@@ -37,7 +37,7 @@ test_convergence <- function(factor_list, num_iterations, pop_params, response_g
     for (condition in 1:nrow(exp_conditions)) {
       
       iteration_results <- as.data.table(parLapply(cl = simulation_cluster, X = num_iterations, 
-                                                   fun = test_condition, 
+                                                   fun = evaluate_condition, 
                                                    pop_params = pop_params, 
                                                    response_group_size = response_group_size, 
                                                    num_measurements = exp_conditions$num_measurements[condition], 
@@ -60,7 +60,7 @@ test_convergence <- function(factor_list, num_iterations, pop_params, response_g
     for (condition in 1:nrow(exp_conditions)) {
       
       iteration_results <- as.data.table(mclapply(X = num_iterations, 
-                                                  FUN = test_condition, 
+                                                  FUN = evaluate_condition, 
                                                   pop_params = pop_params, 
                                                   response_group_size = response_group_size, 
                                                   
@@ -76,7 +76,7 @@ test_convergence <- function(factor_list, num_iterations, pop_params, response_g
   return(total_results)
 }
 
-test_condition <- function(num_iterations, pop_params, response_group_size, 
+evaluate_condition <- function(num_iterations, pop_params, response_group_size, 
                            num_measurements, measurement_spacing, midpoint_value) {
   
   num_measurements <- num_measurements
@@ -87,7 +87,7 @@ test_condition <- function(num_iterations, pop_params, response_group_size,
   
   schedule <- compute_measurement_schedule(time_period = 360, 
                                            num_measurements =  num_measurements, 
-                                           base_time_length = 30, 
+                                           smallest_int_length = 30, 
                                            measurement_spacing = measurement_spacing)
   
   cov_matrix <- generate_three_param_cov_matrix(num_time_points = num_measurements, pop_param_list = pop_params)

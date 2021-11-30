@@ -45,7 +45,10 @@ create_logistic_growth_model <- function(data_wide, model_name) {
                                    'beta_rand', 'NA(var_beta_gamma)', 'gamma_rand'), 
                           lbound = c(1e-3, 
                                      NA, NA, 
-                                     2, NA, 1)), 
+                                     2, NA, 1), 
+                          ubound = c(2, 
+                                     NA, NA, 
+                                     90^2, NA, 90^2)), 
                    
                    #Latent variable means (linear parameters). Note that the nonlinear parameters of beta and gamma do not have estimated means
                    mxPath(from = 'one', to = 'diff', free = TRUE, arrows = 1, values = 1,
@@ -61,9 +64,9 @@ create_logistic_growth_model <- function(data_wide, model_name) {
                    mxMatrix(type = 'Full', nrow = length(manifest_vars), ncol = 1, free = FALSE, 
                             values = measurement_days, name = 'time'),
                    
-                   #Algebra specifying first partial derivatives
+                   #Algebra specifying first partial derivatives; 
                    mxAlgebra(expression = 1/(1 + exp((b - time)/g)), name="Dl"),
-                   mxAlgebra(expression =  -(d * (exp((b - time)/g) * (1/g))/(1 + exp((b - time)/g))^2), name = 'Bl'),
+                   mxAlgebra(expression = -(d * (exp((b - time)/g) * (1/g))/(1 + exp((b - time)/g))^2), name = 'Bl'),
                    mxAlgebra(expression =  d * (exp((b - time)/g) * ((b - time)/g^2))/(1 + exp((b - time)/g))^2, name = 'Gl'),
                    
                    #Factor loadings; all fixed and, importantly, constrained to change according to their partial derivatives (i.e., nonlinear functions) 
