@@ -9,12 +9,12 @@
 #' @return Returns a data table.
 #' @import data.table
 #' @export
-generate_group_scores <- function(num_measurements, param_table, measurement_days, time_period, scaling_constant) {
+generate_group_scores_4l <- function(num_measurements, param_table, measurement_days, time_period) {
   
   #setup variables for creating empty datatable
   num_people <- nrow(param_table)
   num_scores <- num_people*num_measurements
-
+  
   #pre-specify table size
   empty_data <- data.table('ID' = as.factor(rep(1:num_people, each = num_measurements)),
                            
@@ -27,12 +27,12 @@ generate_group_scores <- function(num_measurements, param_table, measurement_day
   true_scores_ls <- vector(mode = 'list', length = num_people)
   
   for (person in 1:nrow(param_table)) {
-    obs_scores_ls[[person]] <- generate_ind_scores(ind_param_values = param_table[person, ],
+    obs_scores_ls[[person]] <- generate_ind_scores_4l(ind_param_values = param_table[person, ],
                                                    num_measurements, measurement_days, 
                                                    scaling_constant = scaling_constant)
-   true_scores_ls[[person]] <- generate_pop_scores(ind_param_values = param_table[person, ],
-                                                   num_measurements, measurement_days, 
-                                                   scaling_constant = scaling_constant)
+    true_scores_ls[[person]] <- generate_pop_scores_4l(ind_param_values = param_table[person, ],
+                                                    num_measurements, measurement_days, 
+                                                    scaling_constant = scaling_constant)
   }
   
   #unlist obs_scores_ls and true_scores_ls and append to data table
@@ -42,24 +42,25 @@ generate_group_scores <- function(num_measurements, param_table, measurement_day
   return(empty_data)
 }
 
-generate_ind_scores <- function(ind_param_values, num_measurements, measurement_days, person_ID, scaling_constant) {
+generate_ind_scores_4l <- function(ind_param_values, num_measurements, measurement_days, person_ID, scaling_constant) {
   
   #extract error values for a person
-  ind_error_values <- extract_ind_error_values(ind_param_values = ind_param_values,
+  ind_error_values <- extract_ind_error_values_4l(ind_param_values = ind_param_values,
                                                num_measurements = num_measurements)
   
   #extract parameter values for a person
-  diff_j <- ind_param_values[['diff_fixed']] + ind_param_values[['diff_random']]
+  theta_j <- ind_param_values[['theta_fixed']] + ind_param_values[['theta_random']]
+  alpha_j <- ind_param_values[['alpha_fixed']] + ind_param_values[['alpha_random']]
   beta_j <- ind_param_values[['beta_fixed']] + ind_param_values[['beta_random']]
   gamma_j <- ind_param_values[['gamma_fixed']] + ind_param_values[['gamma_random']]
   
   #compute scores at each time point for one person
-  ind_scores <- (scaling_constant + diff_j)/(1 + exp((beta_j - measurement_days)/gamma_j)) + ind_error_values
+  ind_scores <-  theta_j + (alpha_j - theta_j)/(1 + exp((beta_j - measurement_days)/gamma_j)) + ind_error_values
   
   return(ind_scores)
 }
 
-extract_ind_error_values <- function(ind_param_values, num_measurements){
+extract_ind_error_values_4l <- function(ind_param_values, num_measurements){
   
   #extract name of error columns and use them to return vector of error values
   error_cols <- tail(names(ind_param_values), num_measurements)
@@ -68,15 +69,17 @@ extract_ind_error_values <- function(ind_param_values, num_measurements){
   return(ind_error_values)
 }
 
-generate_pop_scores <- function(ind_param_values, num_measurements, measurement_days, scaling_constant) {
+generate_pop_scores_4l <- function(ind_param_values, num_measurements, measurement_days, scaling_constant) {
   
   #extract parameter values for a person
-  diff_j <- ind_param_values[['diff_fixed']] + ind_param_values[['diff_random']]
+  theta_j <- ind_param_values[['theta_fixed']] + ind_param_values[['theta_random']]
+  alpha_j <- ind_param_values[['alpha_fixed']] + ind_param_values[['alpha_random']]
+  
   beta_j <- ind_param_values[['beta_fixed']] + ind_param_values[['beta_random']]
   gamma_j <- ind_param_values[['gamma_fixed']] + ind_param_values[['gamma_random']]
   
   #compute scores at each time point for one person
-  pop_scores <-  (scaling_constant + diff_j)/(1 + exp((beta_j - measurement_days)/gamma_j))
+  pop_scores <-  theta_j + (alpha_j - theta_j)/(1 + exp((beta_j - measurement_days)/gamma_j))
   
   return(pop_scores)
 }

@@ -6,7 +6,8 @@
 #' * beta: amount of time to reach midway point (i.e., 50% of the distance between theta and alpha) from time = 0
 #' * gamma: amount of time to reach satiation point (i.e., 73% of distance between theta and alpha) from midpoint
 #' @md
-#' @param diff_fixed fixed-effect value for diff
+#' @param theta_fixed fixed-effect value for theta
+#' @param alpha_fixed fixed-effect value for alpha
 #' @param beta_fixed fixed-effect value for beta
 #' @param gamma_fixed fixed-effect value for gamma
 #'
@@ -17,7 +18,7 @@
 #'
 #' @return Returns a data table.
 #' @export
-generate_ind_param_values <- function(pop_param_list,
+generate_4l_ind_param_values <- function(pop_param_list,
                                       response_group_size, num_time_points,
                                       cov_matrix) {
   
@@ -28,12 +29,13 @@ generate_ind_param_values <- function(pop_param_list,
                                    mu=rep(0, times = nrow(cov_matrix)),
                                    Sigma = cov_matrix, empirical = FALSE) %>% as.data.table()
   
-  var_names <- c('diff_random', 'beta_random', 'gamma_random')
+  var_names <- c('theta_random', 'alpha_random', 'beta_random', 'gamma_random')
   colnames(random_effects) = c(var_names, sprintf(fmt = 'error_%d', 0:(num_time_points - 1)))
   
   #create data table with all parameter values for each participant.
   param_table <- cbind(ID = as.factor(c(1:response_group_size)),
-                       diff_fixed = pop_param_list$diff_fixed,
+                       theta_fixed = pop_param_list$theta_fixed,
+                       alpha_fixed = pop_param_list$alpha_fixed,
                        beta_fixed = pop_param_list$beta_fixed,
                        gamma_fixed = pop_param_list$gamma_fixed,
                        random_effects)

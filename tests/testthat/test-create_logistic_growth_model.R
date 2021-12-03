@@ -61,7 +61,8 @@ test_that("Evaluate model creation procedure", {
   expect_equal(model$M$values[1:num_measurements], nonlinSims:::compute_manifest_means(data_wide = data_wide))
   
   #check that partial derivatives match 
-  log_equation <- expression(d/(1 + exp((b - time)/g)))
+  log_equation <- expression(theta + (a - t)/(1 + exp((b - time)/g)))
+  D(log_equation, 'g')
 
   expect_identical(object = model$Dl$formula, D(log_equation, 'd'))
   expect_identical(object = model$Bl$formula, D(log_equation, 'b'))
