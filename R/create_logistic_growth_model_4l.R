@@ -25,10 +25,10 @@ create_logistic_growth_model_4l <- function(data_wide, model_name, starting_valu
                    
                    #Residual variances; by using one label, they are assumed to all be equal (homogeneity of variance)
                    mxPath(from = manifest_vars,
-                          arrows=2, free=TRUE,  labels='epsilon', values = starting_values$epsilon), #  lbound = 1e-3),
+                          arrows=2, free=TRUE,  labels='epsilon', values = starting_values$epsilon, lbound = 0),
                    
                    #Set manifest means to observed means
-                   mxPath(from = 'one', to = manifest_vars, free = FALSE, arrows = 1, values = manifest_means),
+                   #mxPath(from = 'one', to = manifest_vars, free = FALSE, arrows = 1, values = manifest_means),
                    
                    #Latent variable covariances and variances
                    mxPath(from = latent_vars,
@@ -69,6 +69,7 @@ create_logistic_growth_model_4l <- function(data_wide, model_name, starting_valu
                             labels = 'beta_fixed', name = 'b', lbound = 1, ubound = 360, values = starting_values$beta_fixed),
                    mxMatrix(type = 'Full', nrow = length(manifest_vars), ncol = 1, free = TRUE, 
                             labels = 'gamma_fixed', name = 'g', lbound = 1, ubound = 360, values = starting_values$gamma_fixed),
+                   
                    mxMatrix(type = 'Full', nrow = length(manifest_vars), ncol = 1, free = FALSE, 
                             values = measurement_days, name = 'time'),
                    

@@ -25,10 +25,10 @@ create_logistic_growth_model_4l_ns <- function(data_wide, model_name) {
                    
                    #Residual variances; by using one label, they are assumed to all be equal (homogeneity of variance)
                    mxPath(from = manifest_vars,
-                          arrows=2, free=TRUE,  labels='epsilon', values = 1), #  lbound = 1e-3),
+                          arrows=2, free=TRUE,  labels='epsilon', values = 1, lbound = 0),
                    
-                   #Set manifest means to observed means
-                   mxPath(from = 'one', to = manifest_vars, free = FALSE, arrows = 1, values = manifest_means),
+                   #Set manifest means to observed means; do not enable following line of code or else convergence drops dramatically
+                   #mxPath(from = 'one', to = manifest_vars, free = FALSE, arrows = 1, values = manifest_means),
                    
                    #Latent variable covariances and variances
                    mxPath(from = latent_vars,
@@ -52,23 +52,24 @@ create_logistic_growth_model_4l_ns <- function(data_wide, model_name) {
                                      1), 
                           ubound = c(2, NA, NA, NA, 
                                      2, NA, NA, 
-                                     90^2, NA, 45^2)),
+                                     90^2, NA, 
+                                     45^2)),
                    
                    #Latent variable means (linear parameters). Note that the nonlinear parameters of beta and gamma do not have estimated means
                    mxPath(from = 'one', to = c('theta', 'alpha'), free = c(TRUE, TRUE), arrows = 1,
                           labels = c('theta_fixed', 'alpha_fixed'), lbound = 0, ubound = 7, 
-                          values = c(1, 
-                                     1)),
+                          values = c(1, 1)),
                    
                    #Functional constraints
                    mxMatrix(type = 'Full', nrow = length(manifest_vars), ncol = 1, free = TRUE, 
-                            labels = 'theta_fixed', name = 't',  lbound = 0,  ubound = 7, values = 1),
+                            labels = 'theta_fixed', name = 't', values = 1, lbound = 0,  ubound = 7), 
                    mxMatrix(type = 'Full', nrow = length(manifest_vars), ncol = 1, free = TRUE, 
-                            labels = 'alpha_fixed', name = 'a',  lbound = 0,  ubound = 7, values = 1), 
+                            labels = 'alpha_fixed', name = 'a', values = 1, lbound = 0,  ubound = 7), 
                    mxMatrix(type = 'Full', nrow = length(manifest_vars), ncol = 1, free = TRUE, 
-                            labels = 'beta_fixed', name = 'b', lbound = 1, ubound = 360, values = 1),
+                            labels = 'beta_fixed', name = 'b', values = 1, lbound = 1, ubound = 360),
                    mxMatrix(type = 'Full', nrow = length(manifest_vars), ncol = 1, free = TRUE, 
-                            labels = 'gamma_fixed', name = 'g', lbound = 1, ubound = 360, values = 1),
+                            labels = 'gamma_fixed', name = 'g', values = 1, lbound = 1, ubound = 360), 
+  
                    mxMatrix(type = 'Full', nrow = length(manifest_vars), ncol = 1, free = FALSE, 
                             values = measurement_days, name = 'time'),
                    

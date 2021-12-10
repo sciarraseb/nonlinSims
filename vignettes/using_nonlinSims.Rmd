@@ -22,7 +22,7 @@ library(devtools)
 
 #library(devtools)
 library(easypackages)
-packages <- c('devtools', 'nonlinSims', 'parallel', 'tidyverse', "OpenMx", "data.table")
+packages <- c('devtools', 'nonlinSims', 'parallel', 'tidyverse', "OpenMx", "data.table", 'nlme')
 libraries(packages)
 
 #packages to load: tidyverse, data.table, 
@@ -40,7 +40,6 @@ measurements. The patterns of s-shape change will be manipulated by modulating t
 point. Change will be assumed to occur over a 360-day period. Sample size will be fixed at 225. 
 
 ```{r generate-four-param-data, echo=F}
-
 time_period <- 360
 
 #fixed effects
@@ -57,9 +56,9 @@ sd_beta <- 10
 sd_gamma <- 4
 sd_error <- 0.03
 
-num_time_points <- 9
-response_group_size <- 50
-beta_fixed <- 80
+num_measurements <- 5
+response_group_size <- 225
+beta_fixed <- 200
 
 #Set up of population-level parameters
 pop_params_4l <- generate_four_param_pop_curve (theta_fixed =  theta_fixed, alpha_fixed = alpha_fixed, 
@@ -67,18 +66,41 @@ pop_params_4l <- generate_four_param_pop_curve (theta_fixed =  theta_fixed, alph
                                              sd_theta = sd_theta, sd_alpha = sd_alpha, 
                                              sd_beta = sd_beta, sd_gamma = sd_gamma, sd_error = sd_error)
 
-pop_params <- generate_three_param_pop_curve(diff_fixed = 0.32, beta_fixed =  beta_fixed = beta_fixed, gamma_fixed = gamma_fixed,
-                                             sd_diff = 0)
+schedule <- compute_measurement_schedule(time_period = 360, 
+                                           num_measurements =  num_measurements, 
+                                           smallest_int_length = 30, 
+                                           measurement_spacing = 'equal')
+
 
 factor_list <- list('num_measurements' = seq(from = 5, to = 5, by = 2), 
-                    'spacing' = c('equal', 'time_inc', 'time_dec', 'mid_ext'), 
+                    'spacing' = c('equal'), #, 'time_inc', 'time_dec', 'mid_ext'), 
                     'midpoint' = seq(from = 80, to = 80, by = 100))
 
 
-run_exp_simulation_4l(factor_list = factor_list, num_iterations = 2, pop_params = pop_params_4l, response_group_size = 225, num_cores = 3, seed = 27)
+sample_output <- run_exp_simulation_4l(factor_list = factor_list, num_iterations = 10, pop_params = pop_params_4l, response_group_size = 50, num_cores = 3, seed = 27)
+
+sample_output$minus_2_likelihood <- as.numeric(sample_output$minus_2_likelihood)
+sample_output$theta_fixed <- as.numeric(sample_output$theta_fixed)
+sample_output$alpha_fixed <- as.numeric(sample_output$alpha_fixed)
+sample_output$beta_fixed <- as.numeric(sample_output$beta_fixed)
+sample_output$gamma_fixed <- as.numeric(sample_output$gamma_fixed)
+
+sample_output$theta_rand <- as.numeric(sample_output$theta_rand)
+sample_output$alpha_rand <- as.numeric(sample_output$alpha_rand)
+sample_output$beta_rand <- as.numeric(sample_output$beta_rand)
+sample_output$gamma_rand<- as.numeric(sample_output$gamma_rand)
+sample_output$epsilon<- as.numeric(sample_output$epsilon)
 
 
+sample_output[ ,c(6:10, 13, 14)] <- round(x = sample_output[ ,c(6:10, 13, 14)], 2)
+sample_output[ ,c(11,12,15)] <- round(x = sample_output[ ,c(11,12,15)], 4)
 
+write_csv(x = sample_output, file = 'sample_output.csv')
+
+```
+
+
+```{r}
 
 cov_matrix_4l <- generate_four_param_cov_matrix(num_time_points = num_time_points, pop_param_list = pop_params_4l)
 
@@ -92,43 +114,9 @@ data_wide <- pivot_wider(data = data[ ,1:3], names_from = 'measurement_day', val
                              names_prefix = sprintf('t%d_', 1:uniqueN(data$measurement_day)))
 names(data_wide)[-1] <- nonlinSims:::generate_manifest_var_names(data_wide)
 
+start_values <- start_values <- compute_starting_values_4l(data = data)
 
-#get good starting values for theta, alpha, beta, and gamma 
-fixed_starts <- getInitial(obs_score ~ SSfpl(input = measurement_day, A = theta, B = alpha, xmid = beta, scal = gamma), data = data)
-start_value_output <- nlsList(obs_score ~ SSfpl(input = measurement_day, A = theta, B = alpha, xmid = beta, scal = gamma)| ID, data = data, 
-                                start = fixed_starts, warn.nls = F)
-ind_estimated_values <- ranef(start_value_output)
-  
-#theta_rand starting values  
-ordered_theta <- rand_starts$theta[order(rand_starts$theta)]
-middle_95_percentiles_theta <- quantile(ordered_theta, probs = c(.025, .975), na.rm = T)
-middle_95_theta <- na.exclude(ordered_theta[ordered_theta >= middle_95_percentiles_theta[1] & ordered_theta <= middle_95_percentiles_theta[2]])
-
-#alpha_rand starting values  
-ordered_alpha <- rand_starts$alpha[order(rand_starts$alpha)]
-middle_95_percentiles_alpha <- quantile(ordered_alpha, probs = c(.025, .975), na.rm = T)
-middle_95_alpha <- na.exclude(ordered_alpha[ordered_alpha >= middle_95_percentiles_alpha[1] & ordered_alpha <= middle_95_percentiles_alpha[2]])
-
-#beta_rand starting values  
-ordered_beta <- rand_starts$beta[order(rand_starts$beta)]
-middle_95_percentiles_beta <- quantile(ordered_beta, probs = c(.025, .975), na.rm = T)
-middle_95_gamma<- na.exclude(ordered_beta[ordered_diff >= middle_95_percentiles_beta[1] & ordered_beta <= middle_95_percentiles_beta[2]])
-
-#gamma_rand starting values  
-ordered_gamma <- rand_starts$gamma[order(rand_starts$gamma)]
-middle_95_percentiles_gamma <- quantile(ordered_gamma, probs = c(.025, .975), na.rm = T)
-middle_95_gamma<- na.exclude(ordered_gamma[ordered_diff >= middle_95_percentiles_gamma[1] & ordered_gamma <= middle_95_percentiles_gamma[2]])
-  
-start_values <- list('theta_fixed' = fixed_starts['theta'], 
-                     'alpha_fixed' = fixed_starts['alpha'], 
-                     'beta_fixed' = fixed_starts['beta'], 
-                     'gamma_fixed' = fixed_starts['gamma'],
-                       
-                     'theta_rand' = var(middle_95_theta), #var(middle_95_diff), 
-                     'alpha_rand' = var(middle_95_alpha), #var(middle_95_diff), 
-                     'beta_rand' = var(middle_95_beta), 
-                     'gamma_rand' = var(middle_95_gamma), 
-                     'epsilon' = runif(n = 1, min = 1, max = 5))
+model <- create_logistic_growth_model_4l(data_wide = data_wide, model_name = 'test', starting_values = start_values)
 
 
 ```

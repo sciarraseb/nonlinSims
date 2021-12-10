@@ -10,27 +10,17 @@ run_exp_simulation_4l <- function(factor_list, num_iterations, pop_params, respo
   
   set.seed(seed)
   
-  
-  if (.Platform$OS.type == 'windows') {
+  if (.Platform$OS.type == "windows") {
     
-    #needed to ensure reproducibility 
-    RNGkind("L'Ecuyer-CMRG")
-    
-    
-    #setup variables 
     exp_conditions <- data.table(expand.grid(factor_list))
     exp_conditions$spacing <- as.character(exp_conditions$spacing)
     total_results <- data.table()
     
     
-    #open clusters
-    simulation_cluster <- makeCluster(spec = num_cores)
-    
-    #load relevant variables into cluster
-    clusterExport(cl = simulation_cluster, varlist = list("exp_conditions", "total_results"))
-    
-    #load packages into each node cluster 
-    clusterEvalQ(cl = simulation_cluster, expr =  {
+    simulation_cluster <- makeCluster(spec = num_cores, type = "PSOCK", methods= FALSE)
+    clusterExport(cl = simulation_cluster, varlist = list("exp_conditions", 
+                                                          "total_results"))
+    clusterEvalQ(cl = simulation_cluster, expr = {
       library(nonlinSims)
       library(parallel)
       library(tidyverse)
@@ -38,27 +28,20 @@ run_exp_simulation_4l <- function(factor_list, num_iterations, pop_params, respo
       library(data.table)
     })
     
-    
-    #run simulation in cluster
     for (condition in 1:nrow(exp_conditions)) {
-      
-      iteration_results <- as.data.table(parLapply(cl = simulation_cluster, X = num_iterations, 
-                                                   fun = run_condition_simulation_4l, 
-                                                   pop_params = pop_params, 
-                                                   response_group_size = response_group_size, 
+      iteration_results <- as.data.table(parLapply(cl = simulation_cluster, 
+                                                   X = num_iterations, fun = nonlinSims:::run_condition_simulation, 
+                                                   pop_params = pop_params, response_group_size = response_group_size, 
                                                    num_measurements = exp_conditions$num_measurements[condition], 
                                                    measurement_spacing = exp_conditions$spacing[condition], 
                                                    midpoint_value = exp_conditions$midpoint[condition]))
-      
+                                                   
       total_results <- rbind(total_results, iteration_results)
     }
     
-    #export data set 
-    clusterExport(cl = simulation_cluster, varlist = list('total_results'))
+    clusterExport(cl = simulation_cluster, varlist = list("total_results"))
     
-    #close cluster
     stopCluster(cl = simulation_cluster)
-    
   }
   
   if(.Platform$OS.type == 'unix'){
@@ -81,6 +64,7 @@ run_exp_simulation_4l <- function(factor_list, num_iterations, pop_params, respo
                                                   num_measurements = exp_conditions$num_measurements[condition], 
                                                   measurement_spacing = exp_conditions$spacing[condition], 
                                                   midpoint_value = exp_conditions$midpoint[condition],
+                                                  
                                                   mc.cores = num_cores, mc.set.seed = T))
       
       total_results <- rbind(total_results, iteration_results)
@@ -109,8 +93,7 @@ run_condition_simulation_4l <- function(num_iterations, pop_params, response_gro
                                 cov_matrix = cov_matrix, 
                                 measurement_spacing = measurement_spacing,
                                 schedule = schedule, 
-                                response_group_size = response_group_size)
-  
+                                response_group_size = response_group_size) 
   #extract column names first
   col_names <- names(convergence_results[[1]])
   
@@ -144,25 +127,43 @@ run_ind_simulation_4l <- function(num_iterations, pop_params, cov_matrix, measur
   names(data_wide)[-1] <- generate_manifest_var_names(data_wide)
   
   
-  #create placeholder model  
-  latent_growth_model <- create_logistic_growth_model_4l_ns(data_wide = data_wide, model_name = 'lg_nonlinear')
+  start_values <- try(compute_starting_values_4l(data = data), silent = T)
   
-  #find good starting values 
-  latent_growth_model <- mxAutoStart(model = latent_growth_model)
+  if (class(start_values) == 'try-error') {
+    
+    latent_growth_model <- create_logistic_growth_model_4l_ns(data_wide = data_wide, model_name = 'auto_start')
+    latent_growth_model <- mxAutoStart(model = latent_growth_model)
+  }
   
+  else { 
+  latent_growth_model <- create_logistic_growth_model_4l(data_wide = data_wide, model_name = 'custom_start', starting_values = start_values)
+  }
+
+
   #run model with 10 different sets of starting values 
   model_results <- mxTryHard(latent_growth_model)
   
   #return simulation parameter values, random seed number, & convergence output 
   analysis_output <- c('number_measurements' = ncol(data_wide) - 1, 
-                       'measurement_spacing' = measurement_spacing, 
-                       'midpoint' = pop_params$beta_fixed, 
-                       'status' = model_results$output$status$status,
-                       'code' = model_results$output$status$code, 
-                       'minus_2_likelihood' = model_results$output$Minus2LogLikelihood)
+                      'measurement_spacing' = measurement_spacing, 
+                      'midpoint' = pop_params$beta_fixed, 
+                      'status' = model_results$output$status$status,
+                      'code' = model_results$output$status$code, 
+                      'minus_2_likelihood' = as.numeric(model_results$output$Minus2LogLikelihood), 
+                      'type_of_start' = model_results$name, 
+                      
+                      'theta_fixed' = as.numeric(model_results$output$estimate['theta_fixed']), 
+                      'alpha_fixed' =  as.numeric(model_results$output$estimate['alpha_fixed']), 
+                      'beta_fixed' = as.numeric(model_results$output$estimate['beta_fixed']), 
+                      'gamma_fixed' = as.numeric(model_results$output$estimate['gamma_fixed']), 
+                      
+                      'theta_rand' = as.numeric(model_results$output$estimate['theta_rand']), 
+                      'alpha_rand' =  as.numeric(model_results$output$estimate['alpha_rand']), 
+                      'beta_rand' = as.numeric(model_results$output$estimate['beta_rand']), 
+                      'gamma_rand' = as.numeric(model_results$output$estimate['gamma_rand']), 
+                      'epsilon' = as.numeric(model_results$output$estimate['epsilon']))
   
-  
-  return(analysis_output)
+  return (analysis_output)
 }
 
 
