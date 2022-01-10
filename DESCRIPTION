@@ -22,6 +22,7 @@ Imports:
   data.table, 
   OpenMx,
   snowfall, 
-  parallel
+  parallel, 
+  progress
 VignetteBuilder: knitr
 Config/testthat/edition: 3
