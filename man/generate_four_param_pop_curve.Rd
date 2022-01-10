@@ -28,8 +28,6 @@ generate_four_param_pop_curve(
 
 \item{sd_alpha}{standard deviation of second plateau}
 
-\item{sd_beta}{standard deviation of beta}
-
 \item{sd_gamma}{standard deviation of gamma}
 
 \item{sd_error}{standard deviation of errors}

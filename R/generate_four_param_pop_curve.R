@@ -15,7 +15,6 @@
 #'
 #' @param sd_theta standard deviation of  first plateau
 #' @param sd_alpha standard deviation of second plateau
-#' @param sd_beta standard deviation of beta
 #' @param sd_gamma standard deviation of gamma
 #' @param sd_error standard deviation of errors
 #'

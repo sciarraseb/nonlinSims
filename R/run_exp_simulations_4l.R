@@ -48,43 +48,66 @@ run_exp_simulation_4l <- function(factor_list, num_iterations, pop_params, respo
     
     RNGkind("L'Ecuyer-CMRG")
     
+    
     #compute experiment conditions
     exp_conditions <- data.table(expand.grid(factor_list))
     exp_conditions$spacing <- as.character(exp_conditions$spacing)
-    total_results <- data.table()
+    
+    #list object that will contain data.tables 
+    num_conditions <- nrow(exp_conditions)
+    results_list <- vector(mode = 'list', length = num_conditions)
+    
+    #progress bar 
+    #num_total_iterations <-  num_iterations * nrow(exp_conditions) # Number of iterations of the loop
+    
+    # Initializes the progress bar
+    progess_bar <- progress_bar$new(#format = "(:spin) [:bar] :percent [Elapsed time: :elapsedfull || Estimated time remaining: :eta]",
+                                    total = num_conditions,
+                                    complete = "=",   # Completion bar character
+                                    incomplete = "-", # Incomplete bar character
+                                    current = ">",    # Current bar character
+                                    clear = FALSE,    # If TRUE, clears the bar when finish
+                                    width = 100, 
+                                    force = T)
     
     #test convergence in each condition
-    for (condition in 1:nrow(exp_conditions)) {
+    for (condition in 1:num_conditions) {
       
-      iteration_results <- as.data.table(mclapply(X = num_iterations, 
-                                                  FUN = run_condition_simulation_4l, 
-                                                  pop_params = pop_params, 
-                                                  response_group_size = response_group_size, 
-                                                  
-                                                  num_measurements = exp_conditions$num_measurements[condition], 
-                                                  measurement_spacing = exp_conditions$spacing[condition], 
-                                                  midpoint_value = exp_conditions$midpoint[condition],
-                                                  
-                                                  mc.cores = num_cores, mc.set.seed = T))
+      #shows current tick on progress bar
+      progess_bar$tick()
       
-      total_results <- rbind(total_results, iteration_results)
+      results_list[condition] <- mclapply(X = num_iterations, 
+                                    FUN = run_condition_simulation_4l, 
+                                    pop_params = pop_params, 
+                                    response_group_size = response_group_size, 
+                                    
+                                    num_measurements = exp_conditions$num_measurements[condition], 
+                                    measurement_spacing = exp_conditions$spacing[condition], 
+                                    midpoint_value = exp_conditions$midpoint[condition],
+                                    
+                                    mc.cores = num_cores, mc.set.seed = T)
       
-    }
+      }
+    
+    simulation_results <- rbindlist(l = results_list, use.names = T, fill = T)
   }
-  return(total_results)
+  
+  return(simulation_results)
 }
 
 run_condition_simulation_4l <- function(num_iterations, pop_params, response_group_size, 
                                      num_measurements, measurement_spacing, midpoint_value) {
   
   #setup of population parameters
-  pop_params$beta_fixed <- midpoint_value #update beta value
-  
   schedule <- compute_measurement_schedule(time_period = 360, 
                                            num_measurements =  num_measurements, 
                                            smallest_int_length = 30, 
                                            measurement_spacing = measurement_spacing)
   
+  #add beta value
+  pop_params$beta_fixed <- midpoint_value 
+  
+  #generate covariance matrix with specified beta value
   cov_matrix <- generate_four_param_cov_matrix(num_time_points = num_measurements, pop_param_list = pop_params)
   
   #test convergence in each condition
@@ -94,15 +117,9 @@ run_condition_simulation_4l <- function(num_iterations, pop_params, response_gro
                                 measurement_spacing = measurement_spacing,
                                 schedule = schedule, 
                                 response_group_size = response_group_size) 
-  #extract column names first
-  col_names <- names(convergence_results[[1]])
-  
-  convergence_results <- data.table(matrix(unlist(convergence_results, use.names = T), 
-                                           ncol = length(convergence_results[[1]]), byrow = T))
-  
-  #assign column names
-  names(convergence_results) <- col_names
-  
+
+  #collapse results
+  convergence_results <- rbindlist(convergence_results, use.names = T, fill = T)
   
   return(convergence_results)
 }
@@ -144,7 +161,7 @@ run_ind_simulation_4l <- function(num_iterations, pop_params, cov_matrix, measur
   model_results <- mxTryHard(latent_growth_model)
   
   #return simulation parameter values, random seed number, & convergence output 
-  analysis_output <- c('number_measurements' = ncol(data_wide) - 1, 
+  analysis_output <- data.table('number_measurements' = ncol(data_wide) - 1, 
                       'measurement_spacing' = measurement_spacing, 
                       'midpoint' = pop_params$beta_fixed, 
                       'status' = model_results$output$status$status,
