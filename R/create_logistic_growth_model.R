@@ -5,7 +5,7 @@
 #' @param data_wide wide version of data 
 #' @param model_name name of model 
 #' @export
-create_logistic_growth_model_4l <- function(data_wide, model_name, starting_values) {
+create_logistic_growth_model <- function(data_wide, model_name, starting_values) {
   
   #initial checks 
   tryCatch(expr = model_name, error = function(e) {message("Error: model_name is not a character vector")})

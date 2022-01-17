@@ -5,7 +5,7 @@
 #' @param data_wide wide version of data 
 #' @param model_name name of model 
 #' @export
-compute_starting_values_4l <- function(data){
+compute_starting_values <- function(data){
   
   fixed_starts <- getInitial(obs_score ~ SSfpl(input = measurement_day, A = theta, B = alpha, xmid = beta, scal = gamma), data = data)
   

@@ -23,6 +23,7 @@ Imports:
   OpenMx,
   snowfall, 
   parallel, 
-  progress
+  progress, 
+  purrr
 VignetteBuilder: knitr
 Config/testthat/edition: 3

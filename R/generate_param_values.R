@@ -18,13 +18,13 @@
 #'
 #' @return Returns a data table.
 #' @export
-generate_4l_ind_param_values <- function(pop_param_list,
+generate_ind_param_values <- function(pop_param_list,
                                       response_group_size, num_time_points,
                                       cov_matrix) {
   
-  #generate random effects (i.e., random deviations) for diff, beta, and gamma for each person
+  #generate random effects (i.e., random deviations) for theta, alpha, beta, and gamma for each person
   ##note: random-effects are assumed to have mean = 0
-  ## note: empirical=F so values do not define sample-level parameters
+  ## note: empirical=F so values do not define sample-level values
   random_effects <-  MASS::mvrnorm(n = response_group_size,
                                    mu=rep(0, times = nrow(cov_matrix)),
                                    Sigma = cov_matrix, empirical = FALSE) %>% as.data.table()
