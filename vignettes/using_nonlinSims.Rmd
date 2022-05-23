@@ -18,12 +18,30 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(devtools)
-#install_github("sciarraseb/nonlinSims", force=T)
+install_github("sciarraseb/nonlinSims", force=T)
 
 #library(devtools)
 library(easypackages)
-packages <- c('devtools', 'nonlinSims', 'parallel', 'tidyverse', "OpenMx", "data.table", 'nlme')
+packages <- c('devtools', 'nonlinSims', 'parallel', 'tidyverse', "OpenMx", "data.table", 'progress')
 libraries(packages)
+
+#exp_1_data <- read_csv(file = 'exp_1_data.csv')
+#
+#exp_1_data %>%
+#  group_by(number_measurements, measurement_spacing, midpoint) %>%
+#  filter(code == 0) %>%
+#  summarize(theta_fixed = mean(theta_fixed), 
+#            alpha_fixed =  mean(alpha_fixed), 
+#            beta_fixed =  mean(beta_fixed), 
+#            gamma_fixed = mean(gamma_fixed), 
+#            
+#            theta_rand = sqrt(mean(theta_rand)), 
+#            alpha_rand = sqrt(mean(alpha_rand)), 
+#            beta_rand = sqrt(mean(beta_rand)), 
+#            gamma_rand = sqrt(mean(gamma_rand)), 
+#            
+#            epsilon = sqrt(mean(epsilon)))
+#
 
 #packages to load: tidyverse, data.table, 
 ```
@@ -46,7 +64,8 @@ time_period <- 360
 sd_scale <- 1
 common_effect_size <- 0.32
 theta_fixed <- 3
-alpha_fixed <-theta_fixed + common_effect_size
+alpha_fixed <- theta_fixed + common_effect_size
+beta_fixed <- 180
 gamma_fixed <- 20
 
 #random effects 
@@ -56,10 +75,6 @@ sd_beta <- 10
 sd_gamma <- 4
 sd_error <- 0.03
 
-num_measurements <- 5
-response_group_size <- 225
-beta_fixed <- 80
-
 #Set up of population-level parameters
 pop_params_4l <- generate_four_param_pop_curve(theta_fixed =  theta_fixed, alpha_fixed = alpha_fixed, 
                                                beta_fixed = beta_fixed, gamma_fixed = gamma_fixed, 
@@ -67,119 +82,51 @@ pop_params_4l <- generate_four_param_pop_curve(theta_fixed =  theta_fixed, alpha
                                                sd_beta = sd_beta, sd_gamma = sd_gamma, sd_error = sd_error) 
 
 factor_list <- list('num_measurements' = seq(from = 5, to = 5, by = 2), 
-                    'spacing' = c('equal', 'time_inc', 'time_dec', 'mid_ext'), 
-                    'midpoint' = seq(from = 80, to = 80, by = 100))
+                    'time_structuredness' = c('slow_response'),
+                    'spacing' = 'equal', 
+                    'midpoint' = 180, 
+                    'sample_size' = c(30))
 
-sample_output <- run_exp_simulation_4l(factor_list = factor_list, num_iterations = 10, pop_params = pop_params_4l, response_group_size = 50, num_cores = 3, seed = 27)
-
-
+run_exp_simulation(factor_list = factor_list, num_iterations = 2, pop_params = pop_params_4l, num_cores = 3, seed = 27)
 ```
 
 
-```{r presentation_figures, echo=F}
-num_measurements <- 360
+## Why does standard deviation of estimates not monotonically decrease with sample size?
+###1. Investigate mvrnorm() in generate_ind_param_values()
 
-beta_fixed <- 280
-measurement_days <- seq(from = 1, to = 36, by = 0.5)
-change_pattern <- 100/(1 + exp((8 - measurement_days)/2.8))
+```{r mvrnorm_tests, echo=F}
 
-generate_exponential_response_curve <- function(a, b, c, time_values) {
-  curve_values <- a + b*exp(c*time_values)
+#setup variables
+num_time_points <- 5
+num_iterations <- 100
+sample_sizes <- c(30, 50, 100, 200, 500, )
+
+#covariancematrix 
+cov_matrix <- generate_four_param_cov_matrix(num_time_points = num_time_points, pop_param_list = pop_params_4l)
+
+compute_sd_param_values <- function(cov_matrix, pop_params, sample_size, num_time_points) {
   
-  response_pattern_df <- data.frame('time' = time_values, 'curve_value' = curve_values)
-  return(response_pattern_df)
+  output <- generate_ind_param_values(pop_param_list = pop_params_4l, 
+                          response_group_size = sample_size, 
+                          num_time_points = num_time_points, 
+                          cov_matrix = cov_matrix)
+  
+    return(list('sd_theta' = sd(output$theta_random),
+                'sd_alpha' = sd(output$alpha_random), 
+                'sd_beta' = sd(output$beta_random), 
+                'sd_gamma' = sd(output$gamma_random)))
+  
 }
 
-response_pattern_df <- generate_exponential_response_curve(a = 100, b = -100, c = -0.272, time_values = 0:89)
-
-#gradient_block <- readPNG(source = 'Figures/manually_created_figures/response_gradient.png')
-
-response_curve <- ggplot(response_pattern_df, aes(x = time, y = curve_value)) + 
-  geom_line() + 
-  theme_classic(base_family = 'Helvetica') + 
-  scale_y_continuous(name = 'Cumulative response percentage') + 
-  scale_x_continuous(name = '', breaks = NULL) + 
-  #annotate(geom = 'text', label = "y == italic(a + be^ct)", x = 50, y =75, size = 5, parse=T) + 
-  theme(axis.text = element_text(size = 10, color = 'black'), axis.title = element_text(size = 15))
+compute_sd_param_values(cov_matrix = cov_matrix,
+                        pop_params = pop_params_4l, 
+                        sample_size = 50, 
+                        num_time_points = num_time_points)
 
 
-ggplot(nonlin_data, aes(x = Day, y = score)) + 
-  geom_line(size = 1) +
-  scale_x_continuous() +
-  scale_y_continuous(name = 'Cumulative response percentage', breaks = seq(0, 1, 0.1)) 
-  theme_classic() 
-  labs(x = '', y = 'Cumulative resposne percentage') 
-```
-cov_matrix <- generate_four_param_cov_matrix(num_time_points = num_measurements, pop_param_list = pop_params_4l)
-
-
-ind_param_values <- generate_4l_ind_param_values(pop_param_list = pop_params_4l, cov_matrix = cov_matrix, response_group_size = 225, num_time_points = num_measurements)
-schedule <- compute_measurement_schedule(time_period = 360, num_measurements = num_measurements, smallest_int_length = 30, measurement_spacing = 'equal')
-
-ind_scores <- generate_group_scores_4l(param_table = ind_param_values, num_measurements = num_measurements, measurement_days = schedule$measurement_days, time_period = 360)
-
-
-
-ggplot(nonlin_data, aes(x = measurement_days, y = change_pattern)) + 
-  geom_line(size = 1) + 
-  geom_line(data = ind_scores, size = 0.3, alpha = 0.1, aes(x = measurement_day, y = true_score, group = ID))+ 
-  theme_classic() + 
-  labs(x = '', y = '') + 
-  theme(axis.ticks = element_blank(), 
-        axis.text = element_blank())
 
 
 ```
-
-
-
-```{r generate-thee-param-data, echo=F}
-
-#fixed effects
-sd_scale <- 1
-common_effect_size <- 0.32
-diff_fixed <- sd_scale * common_effect_size
-
-num_measurements <- 9
-time_period <- 360
-
-gamma_fixed <- 20
-
-#random effects 
-sd_diff <- 0.15
-sd_beta <- 10
-sd_gamma <- 3
-sd_error <- 0.05
-
-num_time_points <- 5
-response_group_size <- 225
-beta_fixed <- 80
-                        start_values <- list('theta_fixed' = 3, 
-                     'alpha_fixed' = 3.5, 
-                     'beta_fixed' = 75, 
-                     'gamma_fixed' = 23,
-                       
-                     'theta_rand' = 0.1, #var(middle_95_diff), 
-                     'alpha_rand' = 0.1, #var(middle_95_diff), 
-                     'beta_rand' = 10, 
-                     'gamma_rand' = 3, 
-                     'epsilon' = runif(n = 1, min = 1, max = 5))
-
-logistic_model_4l <- create_logistic_growth_model_4l(data_wide = data_wide, model_name = 'test_model', starting_values = start_values)
-output <- mxTryHard(model = logistic_model_4l)
-logistic_model_4l <- mxAutoStart(logistic_model_4l)
-output <- mxTryHard(model = logistic_model_4l)
-output$output$estimate
-
-
-
- 
-
-
-```
-
-
-
 
 
 # Code tests 

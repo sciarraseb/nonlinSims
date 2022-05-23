@@ -45,7 +45,7 @@ compute_equal_spacing_schedule <- function(time_period, num_measurements){
   interval_lengths <- rep(interval_lengths, times = num_intervals)
   
   return(list('interval_lengths' = interval_lengths,
-              'measurement_days' = c(1, cumsum(interval_lengths))))
+              'measurement_days' = c(0, cumsum(interval_lengths))))
 }
 
 compute_time_increasing_schedule<- function(time_period, num_measurements, smallest_int_length) {
@@ -58,13 +58,14 @@ compute_time_increasing_schedule<- function(time_period, num_measurements, small
   ##num_measurements-1 = number of intervals
   remaining_num_days <- time_period - (num_measurements-1)*smallest_int_length
   
-  ##The number of constants = num_measurements - 1
+  ##The number of constants = num_measurements - 2 because no constant is added to the first interval length 
+  ##the first interval length = smallest_int_length 
   constant_length <- remaining_num_days/sum(seq(0,(num_measurements-2)))
   
   interval_lengths <- seq(0,(num_measurements-2))*constant_length + smallest_int_length
   
   return(list('interval_lengths' = interval_lengths,
-              'measurement_days' = c(1, cumsum(interval_lengths))))
+              'measurement_days' = c(0, cumsum(interval_lengths))))
 }
 
 compute_time_decreasing_schedule<- function(time_period, num_measurements, smallest_int_length) {
@@ -94,7 +95,7 @@ compute_middle_extreme_schedule <- function(time_period, num_measurements, small
                         rep(smallest_int_length, times = num_extreme_intervals/2))
   
   return(list('interval_lengths' = interval_lengths,
-              'measurement_days' = c(1, cumsum(interval_lengths))))
+              'measurement_days' = c(0, cumsum(interval_lengths))))
 }
 
 compute_num_middle_extreme_measurements <- function(num_measurements) {

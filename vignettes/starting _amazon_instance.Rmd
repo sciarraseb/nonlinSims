@@ -5,14 +5,14 @@ output: pdf_document
 
 ```{r amazon_linux, bash}
 #move pem file to ssh folder 
-sudo mv /Users/sebastiansciarra/Desktop/RedHat_key.pem ~/.ssh
+sudo mv /Users/sebastiansciarra/Desktop/RStudio_key2.pem ~/.ssh
 
 #enable 600 status access
 sudo chmod 600 ~/.ssh
 
 #connect to Amazon instance (superuser privilege needed; note public DNS changes each time instance is booted)
-sudo ssh -i ~/.ssh/RStudio_key3pem.pem ec2-user@ec2-3-96-198-117.ca-central-1.compute.amazonaws.com
-sudo ssh -i ~/.ssh/RedHat_key.pem ec2-user@ec2-3-96-198-117.ca-central-1.compute.amazonaws.com
+sudo ssh -i ~/.ssh/RStudio_key2.pem ec2-user@ec2-18-206-81-215.us-east-1.compute.amazonaws.com 
+sudo ssh -i ~/.ssh/RStudio_key2.pem ec2-user@ec2-3-96-198-117.ca-central-1.compute.amazonaws.com
   
   
 #install R (c code, base packages, command prompt)
@@ -39,7 +39,6 @@ sudo R -e "install.packages('RMariaDB')"
 sudo useradd sciarraseb
 sudo passwd sciarraseb #enter password twice 
 sudo cat /etc/shadow
-
 
 
 #install java
